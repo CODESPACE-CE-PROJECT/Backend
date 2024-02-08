@@ -1,6 +1,7 @@
 version: '3'
 services:
   backend:
+    container_name: backend
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,9 +11,12 @@ services:
     
     networks:
       - backend
+      - frontend
 
     restart: always
 
 networks:
   backend:
+    external: true
+  frontend:
     external: true

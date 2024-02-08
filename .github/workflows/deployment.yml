@@ -1,0 +1,41 @@
+name: Deployment
+
+on: 
+    push: 
+        branches: ['main']
+    pull_request:
+        branches: ['main']
+
+jobs:
+    build:
+        runs-on: self-hosted
+        steps:
+            - name: Clone Repo 🤖
+              uses: actions/checkout@v3
+            
+            - name: free disk space
+              run: |
+                echo ${{ secrets.HOST_PASS }} | sudo -S su
+                sudo swapoff -a
+                sudo rm -f /swapfile
+                sudo apt clean
+                df -h
+            
+            - name: Clear Cache 🫧
+              run: |
+                docker stop backend || true
+                docker rm backend || true
+                docker rmi backend-backend:latest || true
+            
+            - name: Run Image ✅
+              run: |
+                docker compose up -d
+            
+            - name: Message ✉️
+              uses: fjogeleit/http-request-action@v1
+              with:
+                timeout: 60000
+                url: 'https://discord.com/api/webhooks/1204992482962833408/hu0daelau0uY8lIpQjmlub6q8-E5PdkfUTt1O_8uN8aPrS-Nj4C2r9POCvxkahW1NHzW'
+                method: 'POST'
+                customHeaders: '{"Content-Type": "application/json"}'
+                data: '{"content": "CEPP Backend Build ✅","title": "https://ide-api.unixvextor.com"}]}'
