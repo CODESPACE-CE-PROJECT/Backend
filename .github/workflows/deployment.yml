@@ -35,7 +35,7 @@ jobs:
               uses: fjogeleit/http-request-action@v1
               with:
                 timeout: 60000
-                url: 'https://discord.com/api/webhooks/1204992482962833408/hu0daelau0uY8lIpQjmlub6q8-E5PdkfUTt1O_8uN8aPrS-Nj4C2r9POCvxkahW1NHzW'
+                url: 'https://discord.com/api/webhooks/1205012959085068328/ezj0kI9AMrPCkaZGHr4ERzJS2ZXY5KNPDDkBnKF7Ko1sLVdgSb-rEOf34yy48oe7GlEw'
                 method: 'POST'
                 customHeaders: '{"Content-Type": "application/json"}'
                 data: '{"content": "CEPP Backend Build ✅","title": "https://ide-api.unixvextor.com"}]}'
