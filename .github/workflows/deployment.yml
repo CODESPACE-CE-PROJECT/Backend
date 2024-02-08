@@ -38,4 +38,4 @@ jobs:
                 url: 'https://discord.com/api/webhooks/1205012959085068328/ezj0kI9AMrPCkaZGHr4ERzJS2ZXY5KNPDDkBnKF7Ko1sLVdgSb-rEOf34yy48oe7GlEw'
                 method: 'POST'
                 customHeaders: '{"Content-Type": "application/json"}'
-                data: '{"content": "CEPP Backend Build ✅","title": "https://ide-api.unixvextor.com"}]}'
+                data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://ide-api.unixvextor.com"}]}'
