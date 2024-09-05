@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,3 +7,154 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model School {
+  schoolId   String       @id @default(uuid())
+  schoolName String
+  users      Users[]
+  permission Permission[]
+}
+
+model Permission {
+  permissionId    String  @id @default(uuid())
+  maxCreateUser   Int
+  maxCreateCourse Int
+  canCreateUser   Boolean
+  canUpdateUser   Boolean
+  canDeleteUser   Boolean
+  school          School  @relation(fields: [schoolId], references: [schoolId])
+  schoolId        String
+}
+
+model Users {
+  username       String          @id
+  email          String?         @unique
+  hashedPassword String
+  studentNo      String?
+  firstName      String
+  lastName       String
+  role           Role            @default(STUDENT)
+  picture        String?
+  containerID    String?
+  IpAddress      String?
+  isActived      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  workSpace      WorkSpace[]
+  school         School          @relation(fields: [schoolId], references: [schoolId])
+  schoolId       String
+  courseAnnounce CourseAnnounce?
+  courseStudent  CourseStudent[]
+  courseTeacher  CourseTeacher[]
+  submission     Submission[]
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model WorkSpace {
+  codeSpaceId  String @id @default(uuid())
+  user         Users  @relation(fields: [userId], references: [username])
+  userId       String
+  language     String
+  sourceCode   String
+  fileName     String
+  hashFilename String
+}
+
+model Course {
+  courseId       String           @id @default(uuid())
+  title          String
+  description    String?
+  courseAnnounce CourseAnnounce[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  courseStudent  CourseStudent[]
+  courseTeacher  CourseTeacher[]
+  Assignment     Assignment[]
+}
+
+model CourseAnnounce {
+  courseAnnounceId String   @id @default(uuid())
+  title            String
+  description      String
+  user             Users    @relation(fields: [userId], references: [username])
+  userId           String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  course           Course   @relation(fields: [courseId], references: [courseId])
+  courseId         String
+}
+
+model CourseStudent {
+  courseStudentId String @id @default(uuid())
+  user            Users  @relation(fields: [userId], references: [username])
+  userId          String
+  course          Course @relation(fields: [courseId], references: [courseId])
+  courseId        String
+}
+
+model CourseTeacher {
+  courseStudentId String @id @default(uuid())
+  user            Users  @relation(fields: [userId], references: [username])
+  userId          String
+  course          Course @relation(fields: [courseId], references: [courseId])
+  courseId        String
+}
+
+model Assignment {
+  assignmentId String         @id @default(uuid())
+  title        String
+  description  String
+  isLock       Boolean
+  type         AssignmentType
+  expireAt     DateTime
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  course       Course         @relation(fields: [courseId], references: [courseId])
+  courseId     String
+  Problem      Problem[]
+}
+
+enum AssignmentType {
+  EXERCISE
+  QUIZ
+  EXAM
+}
+
+model Problem {
+  problemId    String       @id @default(uuid())
+  title        String
+  description  String
+  hint         String?
+  revaleCode   String?
+  constraints  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId])
+  assignmentId String
+  testCases    TestCase[]
+  submission   Submission[]
+}
+
+model TestCase {
+  testCaseId String  @id @default(uuid())
+  input      String
+  output     String
+  problem    Problem @relation(fields: [problemId], references: [problemId])
+  problemId  String
+}
+
+model Submission {
+  submissionId String   @id @default(uuid())
+  sourceCode   String
+  result       String
+  status       Boolean
+  createdAt    DateTime @default(now())
+  user         Users    @relation(fields: [userId], references: [username])
+  userId       String
+  problem      Problem  @relation(fields: [problemId], references: [problemId])
+  problemId    String
+}
