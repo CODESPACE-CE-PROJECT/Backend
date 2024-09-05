@@ -10,6 +10,7 @@ jobs:
     sonarqube:
       runs-on: self-hosted
       if: github.event_name == 'pull_request'
+
       name: Build and Analyze
       steps:
         - uses: actions/checkout@v4
