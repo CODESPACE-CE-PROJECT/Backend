@@ -32,6 +32,7 @@ model Users {
   studentNo      String?
   firstName      String
   lastName       String
+  gender         Gender 
   role           Role            @default(STUDENT)
   picture        String?
   containerID    String?
@@ -46,6 +47,11 @@ model Users {
   courseStudent  CourseStudent[]
   courseTeacher  CourseTeacher[]
   submission     Submission[]
+}
+
+enum Gender {
+  MALE
+  FEMAIL
 }
 
 enum Role {

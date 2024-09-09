@@ -1,26 +1,100 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { RegisterDTO } from './dto/register.dto';
+import { Role, Gender } from '@prisma/client';
+import { UpdateUserDTO } from './dto/upadteUser.dto';
+import { throws } from 'assert';
 
 @Injectable()
 export class UserService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(private prisma: PrismaService) {}
+
+  async getAllUser() {
+    try {
+      const users = await this.prisma.users.findMany();
+      return users;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async getUserByUsername(username: string) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: {
+          username: username,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async getUserByEmail(email: string) {
+    try {
+      const user = await this.prisma.users.findFirst({
+        where: {
+          email: email,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async getUserBySchoolId(schoolId: string) {
+    try {
+      const users = await this.prisma.users.findMany({
+        where: {
+          schoolId: schoolId,
+        },
+      });
+      return users;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async createUser(registerDTO: RegisterDTO, role: Role) {
+    try {
+      const user = await this.prisma.users.create({
+        data: {
+          schoolId: registerDTO.schoolId,
+          username: registerDTO.username,
+          email: registerDTO.email,
+          hashedPassword: registerDTO.password,
+          firstName: registerDTO.firstName,
+          lastName: registerDTO.lastName,
+          studentNo: registerDTO.studentNo,
+          role: role,
+          gender: registerDTO.gender === 'MALE' ? Gender.MALE : Gender.FEMAIL,
+        },
+      });
+      return user;
+    } catch (err) {
+      throw new Error('Error Create User');
+    }
+  }
+
+  async updateUserByUsername(username: string, updateUserDTO: UpdateUserDTO) {
+    try {
+      const user = await this.prisma.users.update({
+        where: {
+          username: username,
+        },
+        data: {
+          email: updateUserDTO.email,
+          gender: updateUserDTO.gender === 'MALE' ? Gender.MALE : Gender.FEMAIL,
+          firstName: updateUserDTO.firstName,
+          lastName: updateUserDTO.lastName,
+          studentNo: updateUserDTO.studentNo,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Update User');
+    }
   }
 }
