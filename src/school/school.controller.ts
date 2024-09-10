@@ -12,7 +12,6 @@ import {
 import { SchoolService } from './school.service';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateSchoolDTO } from './dto/createSchool.dto';
-import { allowedNodeEnvironmentFlags } from 'process';
 import { UpdateSchoolDTO } from './dto/updateSchool.dto';
 
 @ApiTags('School')
