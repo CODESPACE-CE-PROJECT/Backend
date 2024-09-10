@@ -1,26 +1,56 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { UserService } from 'src/user/user.service';
+import * as bcrypt from 'bcrypt';
+import { LoginDTO } from './dto/login.dto';
+import { Users } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { IResponseGoogle } from './interface/response-google.inteface.ts';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    private userService: UserService,
+    private jwtService: JwtService,
+  ) {}
+
+  async validateUser(loginDTO: LoginDTO) {
+    const user = await this.userService.getUserByUsername(loginDTO.username);
+    if (
+      user &&
+      (await bcrypt.compare(loginDTO.password, user.hashedPassword))
+    ) {
+      return user;
+    }
+    return null;
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async login(user: Users) {
+    const payload = {
+      username: user.username,
+      role: user.role,
+      schoolId: user.schoolId,
+    };
+    return this.jwtService.sign(payload);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+  async googleLogin(responseGoogle: IResponseGoogle) {
+    if (!responseGoogle) {
+      throw new Error('Google login failed: No User information received.');
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    const user = await this.userService.getUserByEmail(
+      responseGoogle.profile._json.email,
+    );
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    if (!user) {
+      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const payload = {
+      username: user.username,
+      role: user.role,
+      schoolId: user.schoolId,
+    };
+    return this.jwtService.sign(payload);
   }
 }

@@ -1,26 +1,120 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { RegisterDTO } from './dto/register.dto';
+import { Role, Gender } from '@prisma/client';
+import { UpdateUserDTO } from './dto/upadteUser.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(private prisma: PrismaService) {}
+
+  async getAllUser() {
+    try {
+      const users = await this.prisma.users.findMany({
+        omit: {
+          hashedPassword: true,
+        },
+      });
+      return users;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async getUserByUsername(username: string) {
+    try {
+      const user = await this.prisma.users.findUnique({
+        where: {
+          username: username,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async getUserByEmail(email: string | undefined) {
+    try {
+      const user = await this.prisma.users.findFirst({
+        omit: {
+          hashedPassword: true,
+        },
+        where: {
+          email: email,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async getUserBySchoolId(schoolId: string) {
+    try {
+      const users = await this.prisma.users.findMany({
+        where: {
+          schoolId: schoolId,
+        },
+        omit: {
+          hashedPassword: true,
+        },
+      });
+      return users;
+    } catch (error) {
+      throw new Error('Error Fetch User');
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async createUser(registerDTO: RegisterDTO, role: Role) {
+    try {
+      // hashing password
+      const salt = await bcrypt.genSalt();
+      const password = await bcrypt.hash(registerDTO.password, salt);
+
+      const user = await this.prisma.users.create({
+        omit: {
+          hashedPassword: true,
+        },
+        data: {
+          schoolId: registerDTO.schoolId,
+          username: registerDTO.username,
+          email: registerDTO.email,
+          hashedPassword: password,
+          firstName: registerDTO.firstName,
+          lastName: registerDTO.lastName,
+          studentNo: registerDTO.studentNo,
+          role: role,
+          gender: registerDTO.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
+        },
+      });
+      return user;
+    } catch (err) {
+      throw new Error('Error Create User');
+    }
+  }
+
+  async updateUserByUsername(username: string, updateUserDTO: UpdateUserDTO) {
+    try {
+      const user = await this.prisma.users.update({
+        omit: {
+          hashedPassword: true,
+        },
+        where: {
+          username: username,
+        },
+        data: {
+          email: updateUserDTO.email,
+          gender: updateUserDTO.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
+          firstName: updateUserDTO.firstName,
+          lastName: updateUserDTO.lastName,
+          studentNo: updateUserDTO.studentNo,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Update User');
+    }
   }
 }
