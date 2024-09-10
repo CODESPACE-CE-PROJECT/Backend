@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterDTO } from './dto/register.dto';
 import { Role, Gender } from '@prisma/client';
 import { UpdateUserDTO } from './dto/upadteUser.dto';
-import { throws } from 'assert';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -11,7 +11,11 @@ export class UserService {
 
   async getAllUser() {
     try {
-      const users = await this.prisma.users.findMany();
+      const users = await this.prisma.users.findMany({
+        omit: {
+          hashedPassword: true,
+        },
+      });
       return users;
     } catch (error) {
       throw new Error('Error Fetch User');
@@ -31,9 +35,12 @@ export class UserService {
     }
   }
 
-  async getUserByEmail(email: string) {
+  async getUserByEmail(email: string | undefined) {
     try {
       const user = await this.prisma.users.findFirst({
+        omit: {
+          hashedPassword: true,
+        },
         where: {
           email: email,
         },
@@ -50,6 +57,9 @@ export class UserService {
         where: {
           schoolId: schoolId,
         },
+        omit: {
+          hashedPassword: true,
+        },
       });
       return users;
     } catch (error) {
@@ -59,17 +69,24 @@ export class UserService {
 
   async createUser(registerDTO: RegisterDTO, role: Role) {
     try {
+      // hashing password
+      const salt = await bcrypt.genSalt();
+      const password = await bcrypt.hash(registerDTO.password, salt);
+
       const user = await this.prisma.users.create({
+        omit: {
+          hashedPassword: true,
+        },
         data: {
           schoolId: registerDTO.schoolId,
           username: registerDTO.username,
           email: registerDTO.email,
-          hashedPassword: registerDTO.password,
+          hashedPassword: password,
           firstName: registerDTO.firstName,
           lastName: registerDTO.lastName,
           studentNo: registerDTO.studentNo,
           role: role,
-          gender: registerDTO.gender === 'MALE' ? Gender.MALE : Gender.FEMAIL,
+          gender: registerDTO.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
         },
       });
       return user;
@@ -81,12 +98,15 @@ export class UserService {
   async updateUserByUsername(username: string, updateUserDTO: UpdateUserDTO) {
     try {
       const user = await this.prisma.users.update({
+        omit: {
+          hashedPassword: true,
+        },
         where: {
           username: username,
         },
         data: {
           email: updateUserDTO.email,
-          gender: updateUserDTO.gender === 'MALE' ? Gender.MALE : Gender.FEMAIL,
+          gender: updateUserDTO.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
           firstName: updateUserDTO.firstName,
           lastName: updateUserDTO.lastName,
           studentNo: updateUserDTO.studentNo,

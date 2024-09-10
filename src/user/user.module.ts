@@ -8,5 +8,6 @@ import { SchoolModule } from 'src/school/school.module';
   imports: [PrismaModule, SchoolModule],
   controllers: [UserController],
   providers: [UserService],
+  exports: [UserService],
 })
 export class UserModule {}

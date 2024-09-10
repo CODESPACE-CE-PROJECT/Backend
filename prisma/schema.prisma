@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["omitApi"]
 }
 
 datasource db {
@@ -51,7 +52,7 @@ model Users {
 
 enum Gender {
   MALE
-  FEMAIL
+  FEMALE
 }
 
 enum Role {

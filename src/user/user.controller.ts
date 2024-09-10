@@ -7,6 +7,8 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -14,6 +16,8 @@ import { RegisterDTO } from './dto/register.dto';
 import { Role } from '@prisma/client';
 import { SchoolService } from 'src/school/school.service';
 import { UpdateUserDTO } from './dto/upadteUser.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { IRequest } from 'src/auth/interface/request.interface';
 
 @ApiTags('User')
 @Controller('user')
@@ -23,8 +27,15 @@ export class UserController {
     private schoolService: SchoolService,
   ) {}
 
+  @UseGuards(AuthGuard('jwt'))
   @Get()
-  async getAllUser() {
+  async getAllUser(@Request() req: IRequest) {
+    if (req.user.role !== 'ADMIN') {
+      throw new HttpException(
+        'Do Not Have Permission(Admin)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const users = await this.userService.getAllUser();
     return {
       message: 'Successfully Get User',
@@ -32,7 +43,7 @@ export class UserController {
     };
   }
 
-  @Get(':username')
+  @Get('username/:username')
   async getUserByUsername(@Param('username') username: string) {
     const user = await this.userService.getUserByUsername(username);
     if (!user) {
@@ -44,7 +55,7 @@ export class UserController {
     };
   }
 
-  @Get('/emial/:email')
+  @Get('email/:email')
   async getUserByEmail(@Param('email') email: string) {
     const user = await this.userService.getUserByEmail(email);
     if (!user) {
@@ -56,7 +67,7 @@ export class UserController {
     };
   }
 
-  @Get('/school/:schoolId')
+  @Get('school/:schoolId')
   async getUserBySchoolId(@Param('schoolId') schoolId: string) {
     const school = await this.schoolService.getSchoolById(schoolId);
     if (!school) {
@@ -65,6 +76,15 @@ export class UserController {
     const users = await this.userService.getUserBySchoolId(schoolId);
     return {
       message: 'Successfully get User',
+      data: users,
+    };
+  }
+  @UseGuards(AuthGuard('jwt'))
+  @Get('profile')
+  async getProfile(@Request() req: IRequest) {
+    const users = await this.userService.getUserByUsername(req.user.username);
+    return {
+      message: 'Successfully Get Profile',
       data: users,
     };
   }
@@ -90,7 +110,49 @@ export class UserController {
     };
   }
 
-  @Patch(':username')
+  @Post('create-teacher')
+  async createTeacherAccount(@Body() registerDTO: RegisterDTO) {
+    const invalidUsername = await this.userService.getUserByUsername(
+      registerDTO.username,
+    );
+    const invalidEmail = await this.userService.getUserByEmail(
+      registerDTO.email,
+    );
+    if (invalidUsername || invalidEmail) {
+      throw new HttpException(
+        'Already have Username or Email',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+    const user = await this.userService.createUser(registerDTO, Role.TEACHER);
+    return {
+      message: 'Successfully Create Teacher Account',
+      data: user,
+    };
+  }
+
+  @Post('create-student')
+  async createStudentAccount(@Body() registerDTO: RegisterDTO) {
+    const invalidUsername = await this.userService.getUserByUsername(
+      registerDTO.username,
+    );
+    const invalidEmail = await this.userService.getUserByEmail(
+      registerDTO.email,
+    );
+    if (invalidUsername || invalidEmail) {
+      throw new HttpException(
+        'Already have Username or Email',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+    const user = await this.userService.createUser(registerDTO, Role.STUDENT);
+    return {
+      message: 'Successfully Create Student Account',
+      data: user,
+    };
+  }
+
+  @Patch('edit/:username')
   async updateUserById(
     @Param('username') username: string,
     @Body() updateUserDTO: UpdateUserDTO,
