@@ -117,4 +117,49 @@ export class UserService {
       throw new Error('Error Update User');
     }
   }
+
+  async updateStatusByUsername(username: string, active: boolean){
+    try {
+      const user = await this.prisma.users.update({
+        where: {
+          username: username,
+        },
+        data: {
+         isActived: active 
+        }
+      })
+      return user
+    } catch (error) {
+     throw new Error('Error Update Status User') 
+    }
+  }
+
+  async DeleteUserByUsername(username: string) {
+    try {
+      const user = await this.prisma.users.delete({
+        where: {
+          username: username
+        }
+      })
+      return user
+    } catch (error) {
+     throw new Error('Error Dlete User') 
+    }
+  }
+
+  async setIpAddressByUsername(username: string, ipAdd: string){
+    try {
+       const user = await this.prisma.users.update({
+        where: {
+          username: username
+        },
+        data: {
+          IpAddress: ipAdd
+        }
+      })
+      return user
+    } catch (error) { 
+     throw new Error('Error Set Ip Address') 
+    }
+  }
 }
