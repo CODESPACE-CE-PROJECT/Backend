@@ -152,6 +152,15 @@ export class UserController {
     };
   }
 
+  @Get('update-ip/:username')
+  async setIpAddressByusername(@Param('username') username:string, @Request() req:any) {
+    const user = await this.userService.setIpAddressByUsername(username, req.socket.remoteAddress)
+    if(!user){
+      throw new HttpException('Can Not Update IP Address', HttpStatus.NOT_ACCEPTABLE)
+    }
+    return {message: 'Successfully Update Ip Address', data: user}
+  } 
+
   @Patch('edit/:username')
   async updateUserById(
     @Param('username') username: string,

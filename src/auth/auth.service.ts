@@ -20,6 +20,7 @@ export class AuthService {
       user &&
       (await bcrypt.compare(loginDTO.password, user.hashedPassword))
     ) {
+      await this.userService.updateStatusByUsername(loginDTO.username, true)
       return user;
     }
     return null;
@@ -42,7 +43,7 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(
       responseGoogle.profile._json.email,
     );
-
+    await this.userService.updateStatusByUsername(user?.username || '',true)
     if (!user) {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
@@ -53,5 +54,18 @@ export class AuthService {
       schoolId: user.schoolId,
     };
     return this.jwtService.sign(payload);
+  }
+
+  async logout(username: string) {
+    try {
+      const status = await this.userService.updateStatusByUsername(username,false)
+      if(status){
+        return true
+      }else{
+        return false
+      }
+    } catch (error) {
+     throw new Error('Error Logout User') 
+    }
   }
 }
