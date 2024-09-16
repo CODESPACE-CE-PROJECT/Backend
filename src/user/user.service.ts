@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterDTO } from './dto/register.dto';
-import { Role, Gender } from '@prisma/client';
+import { Role, Gender, Users } from '@prisma/client';
 import { UpdateUserDTO } from './dto/upadteUser.dto';
 import * as bcrypt from 'bcrypt';
+import { IRequest } from 'src/auth/interface/request.interface';
 
 @Injectable()
 export class UserService {
@@ -118,19 +119,19 @@ export class UserService {
     }
   }
 
-  async updateStatusByUsername(username: string, active: boolean){
+  async updateStatusByUsername(username: string, active: boolean) {
     try {
       const user = await this.prisma.users.update({
         where: {
           username: username,
         },
         data: {
-         isActived: active 
-        }
-      })
-      return user
+          isActived: active,
+        },
+      });
+      return user;
     } catch (error) {
-     throw new Error('Error Update Status User') 
+      throw new Error('Error Update Status User');
     }
   }
 
@@ -138,28 +139,28 @@ export class UserService {
     try {
       const user = await this.prisma.users.delete({
         where: {
-          username: username
-        }
-      })
-      return user
+          username: username,
+        },
+      });
+      return user;
     } catch (error) {
-     throw new Error('Error Dlete User') 
+      throw new Error('Error Dlete User');
     }
   }
 
-  async setIpAddressByUsername(username: string, ipAdd: string){
+  async setIpAddressByUsername(_user: Users, ipAdd: string) {
     try {
-       const user = await this.prisma.users.update({
+      const user = await this.prisma.users.update({
         where: {
-          username: username
+          username: _user.username,
         },
         data: {
-          IpAddress: ipAdd
-        }
-      })
-      return user
-    } catch (error) { 
-     throw new Error('Error Set Ip Address') 
+          IpAddress: ipAdd,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Set Ip Address');
     }
   }
 }
