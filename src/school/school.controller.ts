@@ -19,7 +19,6 @@ import { UpdateSchoolDTO } from './dto/updateSchool.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { Role } from '@prisma/client';
-import { request } from 'http';
 
 @ApiTags('School')
 @Controller('school')

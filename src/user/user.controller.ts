@@ -341,13 +341,11 @@ export class UserController {
     if (!user) {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
-    if (req.user.role === Role.ADMIN) {
-      await this.userService.deleteUserByUsername(username);
-      return { message: 'Delete User Successfully' };
-    } else if (
-      req.user.role === Role.TEACHER &&
-      user?.schoolId === req.user.schoolId &&
-      user?.role !== Role.ADMIN
+    if (
+      req.user.role === Role.ADMIN ||
+      (req.user.role === Role.TEACHER &&
+        user?.schoolId === req.user.schoolId &&
+        user?.role !== Role.ADMIN)
     ) {
       await this.userService.deleteUserByUsername(username);
       return { message: 'Delete User Successfully' };

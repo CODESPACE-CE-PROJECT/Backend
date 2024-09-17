@@ -1,4 +1,4 @@
-FROM node:18-alpine As development
+FROM node:18-alpine AS development
 
 WORKDIR /usr/src/app
 
@@ -12,7 +12,7 @@ COPY --chown=node:node . .
 
 USER node
 
-FROM node:18-alpine As Build
+FROM node:18-alpine AS Build
 
 WORKDIR /usr/src/app
 
@@ -32,7 +32,7 @@ RUN yarn install --frozen-lockfile
 
 USER node
 
-FROM node:18-alpine As production
+FROM node:18-alpine AS production
 
 COPY --chown=node:node --from=Build /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node --from=Build /usr/src/app/dist ./dist
