@@ -4,11 +4,14 @@ import { RegisterDTO } from './dto/register.dto';
 import { Role, Gender, Users } from '@prisma/client';
 import { UpdateUserDTO } from './dto/upadteUser.dto';
 import * as bcrypt from 'bcrypt';
-import { IRequest } from 'src/auth/interface/request.interface';
+import { MinioClientService } from 'src/minio-client/minio-client.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly minioClient: MinioClientService,
+  ) {}
 
   async getAllUser() {
     try {
@@ -135,7 +138,7 @@ export class UserService {
     }
   }
 
-  async DeleteUserByUsername(username: string) {
+  async deleteUserByUsername(username: string) {
     try {
       const user = await this.prisma.users.delete({
         where: {
@@ -161,6 +164,23 @@ export class UserService {
       return user;
     } catch (error) {
       throw new Error('Error Set Ip Address');
+    }
+  }
+
+  async uploadAvatarProfile(file: Express.Multer.File, username: string) {
+    try {
+      const uploadedImage = await this.minioClient.uploadImage(file);
+      await this.prisma.users.update({
+        where: {
+          username: username,
+        },
+        data: {
+          picture: uploadedImage.objectName,
+        },
+      });
+      return uploadedImage.imageUrl;
+    } catch (error) {
+      throw new Error('Error Upload Image');
     }
   }
 }

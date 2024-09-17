@@ -15,7 +15,7 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   BadRequestException,
-  HttpCode,
+  Delete,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -158,8 +158,7 @@ export class UserController {
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
           new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
         ],
-        exceptionFactory: (err) =>
-          new BadRequestException('Invalid file Upload'),
+        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
       }),
     )
     file: Express.Multer.File,
@@ -167,9 +166,13 @@ export class UserController {
     if (!file) {
       throw new HttpException('No File Upload', HttpStatus.NO_CONTENT);
     }
-    console.log(file);
+    const uploadedImage = await this.userService.uploadAvatarProfile(
+      file,
+      req.user.username,
+    );
     return {
       message: 'Upload Avatar Profile Successfully',
+      imageUrl: uploadedImage,
     };
   }
 
@@ -312,5 +315,44 @@ export class UserController {
       message: 'Successfully Update User',
       data: user,
     };
+  }
+
+  @ApiOperation({ summary: 'Delete User By Username(Teacher,Admin)' })
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':username')
+  async deleteUserByUsername(
+    @Request() req: IRequest,
+    @Param('username') username: string,
+  ) {
+    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+      throw new HttpException(
+        'Do Not Have Permission(Teacher,Admin)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    if (req.user.username === username) {
+      throw new HttpException(
+        'Can Not Delete Your Self',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const user = await this.userService.getUserByUsername(username);
+    if (!user) {
+      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+    }
+    if (req.user.role === Role.ADMIN) {
+      await this.userService.deleteUserByUsername(username);
+      return { message: 'Delete User Successfully' };
+    } else if (
+      req.user.role === Role.TEACHER &&
+      user?.schoolId === req.user.schoolId &&
+      user?.role !== Role.ADMIN
+    ) {
+      await this.userService.deleteUserByUsername(username);
+      return { message: 'Delete User Successfully' };
+    } else {
+      throw new HttpException('Error Delete User', HttpStatus.BAD_REQUEST);
+    }
   }
 }

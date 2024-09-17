@@ -36,7 +36,10 @@ export class MinioClientService {
     await this.ensureBucket(minioBucket);
     this.minio.client.putObject(minioBucket, fileName, fileBuffer);
     const imageUrl = this.getFileUrl(minioBucket, fileName);
-    return imageUrl;
+    return {
+      imageUrl: imageUrl,
+      objectName: fileName,
+    };
   }
 
   async getFileUrl(bucketName: string, objectName: string) {
