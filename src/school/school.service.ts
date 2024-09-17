@@ -57,4 +57,17 @@ export class SchoolService {
       throw new Error('Error Update School');
     }
   }
+
+  async deleteSchoolById(id: string) {
+    try {
+      const school = await this.prisma.school.delete({
+        where: {
+          schoolId: id,
+        },
+      });
+      return school;
+    } catch (error) {
+      throw new Error('Error Delete School');
+    }
+  }
 }

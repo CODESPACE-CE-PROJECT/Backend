@@ -3,6 +3,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SchoolModule } from './school/school.module';
+import { MinioClientModule } from './minio-client/minio-client.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SchoolModule } from './school/school.module';
     UserModule,
     AuthModule,
     SchoolModule,
+    MinioClientModule,
   ],
 })
 export class AppModule {}
