@@ -19,6 +19,8 @@ import { UpdateSchoolDTO } from './dto/updateSchool.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { Role } from '@prisma/client';
+import { CreatePermissionSchoolDTO } from './dto/createPermissionSchool.dto';
+import { UpdatePermissionSchoolDTO } from './dto/upatePermissionSchool.dto';
 
 @ApiTags('School')
 @Controller('school')
@@ -69,7 +71,7 @@ export class SchoolController {
 
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Create School (Admin)' })
-  @Post('create')
+  @Post()
   async createSchool(
     @Request() req: IRequest,
     @Body() createSchoolDTO: CreateSchoolDTO,
@@ -85,6 +87,69 @@ export class SchoolController {
     return {
       message: 'Successfully Create School',
       data: school,
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Create Permission School (Admin)' })
+  @Post('permission')
+  async createPermissionSchool(
+    @Request() req: IRequest,
+    @Body()
+    createPermissionSchoolDTO: CreatePermissionSchoolDTO,
+  ) {
+    if (req.user.role !== Role.ADMIN) {
+      throw new HttpException(
+        'Do Not Have Permission(Admin)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const invalidSchool = await this.schoolService.getSchoolById(
+      createPermissionSchoolDTO.schoolId,
+    );
+    if (!invalidSchool) {
+      throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
+    }
+    const school = await this.schoolService.createPermisssionSchoolById(
+      createPermissionSchoolDTO,
+    );
+    return {
+      message: 'Successfully Create Permission School',
+      data: school,
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Edit Permission School By Id (Admin)' })
+  @Put('permission/edit/:id')
+  async updatePermissionSchoolById(
+    @Request() req: IRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updatePermissionSchoolDTO: UpdatePermissionSchoolDTO,
+  ) {
+    if (req.user.role !== Role.ADMIN) {
+      throw new HttpException(
+        'Do Not Have Permission(Admin)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const permission = await this.schoolService.updatePermissionSchoolById(
+      updatePermissionSchoolDTO,
+      id,
+    );
+
+    if (!permission) {
+      throw new HttpException(
+        'Permission School Not Found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      message: 'Update Permission School Successfully',
+      data: permission,
     };
   }
 
@@ -127,6 +192,13 @@ export class SchoolController {
         HttpStatus.FORBIDDEN,
       );
     }
+    const invalidSchool = await this.schoolService.getSchoolById(id);
+    if (!invalidSchool) {
+      throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
+    }
+    await this.schoolService.deletePermissionSchoolByPermisssionId(
+      invalidSchool?.permission?.permissionId,
+    );
 
     const school = await this.schoolService.deleteSchoolById(id);
     if (!school) {

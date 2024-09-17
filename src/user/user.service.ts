@@ -183,4 +183,32 @@ export class UserService {
       throw new Error('Error Upload Image');
     }
   }
+
+  async countTeacherAccount(schoolId: string): Promise<number> {
+    try {
+      const count = await this.prisma.users.count({
+        where: {
+          schoolId: schoolId,
+          role: Role.TEACHER,
+        },
+      });
+      return count;
+    } catch (error) {
+      throw new Error('Error Count Teacher Account');
+    }
+  }
+
+  async countStudentAccount(schoolId: string): Promise<number> {
+    try {
+      const count = await this.prisma.users.count({
+        where: {
+          schoolId: schoolId,
+          role: Role.STUDENT,
+        },
+      });
+      return count;
+    } catch (error) {
+      throw new Error('Error Count Student Account');
+    }
+  }
 }

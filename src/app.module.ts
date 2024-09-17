@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SchoolModule } from './school/school.module';
 import { MinioClientModule } from './minio-client/minio-client.module';
+import { InitModule } from './init/init.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MinioClientModule } from './minio-client/minio-client.module';
     AuthModule,
     SchoolModule,
     MinioClientModule,
+    InitModule,
   ],
 })
 export class AppModule {}
