@@ -23,7 +23,7 @@ export class MinioClientService {
     const minioBucket = this.configService.get('MINIO_BUCKET') as string;
     const temp_file = Date.now().toString();
     const hashFileName = crypto
-      .createHash('md5')
+      .createHash('sha512')
       .update(temp_file)
       .digest('hex');
     const ext = file.originalname.substring(
