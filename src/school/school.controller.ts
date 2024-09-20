@@ -19,13 +19,17 @@ import { UpdateSchoolDTO } from './dto/updateSchool.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { Role } from '@prisma/client';
-import { CreatePermissionSchoolDTO } from './dto/createPermissionSchool.dto';
-import { UpdatePermissionSchoolDTO } from './dto/upatePermissionSchool.dto';
+import { CreatePermissionSchoolDTO } from 'src/permission/dto/createPermissionSchool.dto';
+import { UpdatePermissionSchoolDTO } from 'src/permission/dto/upatePermissionSchool.dto';
+import { PermissionService } from 'src/permission/permission.service';
 
 @ApiTags('School')
 @Controller('school')
 export class SchoolController {
-  constructor(private readonly schoolService: SchoolService) {}
+  constructor(
+    private readonly schoolService: SchoolService,
+    private readonly permissionService: PermissionService,
+  ) {}
 
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get All School (Admin)' })
@@ -111,7 +115,7 @@ export class SchoolController {
     if (!invalidSchool) {
       throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
     }
-    const school = await this.schoolService.createPermisssionSchoolById(
+    const school = await this.permissionService.createPermisssionSchoolById(
       createPermissionSchoolDTO,
     );
     return {
@@ -135,7 +139,7 @@ export class SchoolController {
       );
     }
 
-    const permission = await this.schoolService.updatePermissionSchoolById(
+    const permission = await this.permissionService.updatePermissionSchoolById(
       updatePermissionSchoolDTO,
       id,
     );
@@ -196,7 +200,7 @@ export class SchoolController {
     if (!invalidSchool) {
       throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
     }
-    await this.schoolService.deletePermissionSchoolByPermisssionId(
+    await this.permissionService.deletePermissionSchoolByPermisssionId(
       invalidSchool?.permission?.permissionId,
     );
 
