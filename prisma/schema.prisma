@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["omitApi"]
 }
 
@@ -12,28 +12,29 @@ model School {
   schoolId   String       @id @default(uuid())
   schoolName String
   users      Users[]
-  permission Permission[]
+  permission Permission?
 }
 
 model Permission {
-  permissionId    String  @id @default(uuid())
-  maxCreateUser   Int
-  maxCreateCourse Int
-  canCreateUser   Boolean
-  canUpdateUser   Boolean
-  canDeleteUser   Boolean
-  school          School  @relation(fields: [schoolId], references: [schoolId])
-  schoolId        String
+  permissionId              String  @id @default(uuid())
+  maxCreateTeacher          Int
+  maxCreateStudent          Int
+  maxCreateCoursePerTeacher Int
+  canCreateUser             Boolean
+  canUpdateUser             Boolean
+  canDeleteUser             Boolean
+  school                    School  @relation(fields: [schoolId], references: [schoolId])
+  schoolId                  String  @unique
 }
 
 model Users {
   username       String          @id
-  email          String?         @unique
+  email          String?         
   hashedPassword String
   studentNo      String?
   firstName      String
   lastName       String
-  gender         Gender 
+  gender         Gender
   role           Role            @default(STUDENT)
   picture        String?
   containerID    String?
@@ -137,6 +138,7 @@ model Problem {
   description  String
   hint         String?
   revaleCode   String?
+  isRegex      Boolean      @default(false)
   constraints  String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt

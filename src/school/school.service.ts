@@ -22,7 +22,11 @@ export class SchoolService {
 
   async getAllSchool() {
     try {
-      const schools = await this.prisma.school.findMany();
+      const schools = await this.prisma.school.findMany({
+        include: {
+          permission: true,
+        },
+      });
       return schools;
     } catch (error) {
       throw new Error('Error Fetch School');
@@ -35,10 +39,29 @@ export class SchoolService {
         where: {
           schoolId: id,
         },
+        include: {
+          permission: true,
+        },
       });
       return school;
     } catch (error) {
       throw new Error('Error Fetch School');
+    }
+  }
+
+  async getSchoolByName(schoolName: string) {
+    try {
+      const school = await this.prisma.school.findFirst({
+        where: {
+          schoolName: schoolName,
+        },
+        include: {
+          permission: true,
+        },
+      });
+      return school;
+    } catch (error) {
+      throw new Error('Can Not Fetch School');
     }
   }
 

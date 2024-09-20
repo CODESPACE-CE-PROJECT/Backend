@@ -60,7 +60,7 @@ export class UserController {
     @Request() req: IRequest,
     @Param('username') username: string,
   ) {
-    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
       throw new HttpException(
         'Do Not Have Permission(Teacher,Admin)',
         HttpStatus.FORBIDDEN,
@@ -83,7 +83,7 @@ export class UserController {
     @Request() req: IRequest,
     @Param('email') email: string,
   ) {
-    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
       throw new HttpException(
         'Do Not Have Permission(Teacher,Admin)',
         HttpStatus.FORBIDDEN,
@@ -195,7 +195,10 @@ export class UserController {
     const invalidEmail = await this.userService.getUserByEmail(
       registerDTO.email,
     );
-    if (invalidUsername || invalidEmail) {
+    if (
+      invalidUsername?.username ||
+      invalidEmail?.email === registerDTO.email
+    ) {
       throw new HttpException(
         'Already have Username or Email',
         HttpStatus.NOT_ACCEPTABLE,
@@ -215,31 +218,55 @@ export class UserController {
     @Request() req: IRequest,
     @Body() registerDTO: RegisterDTO,
   ) {
-    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
       throw new HttpException(
         'Do Not Have Permission(Teacher,Admin)',
         HttpStatus.FORBIDDEN,
       );
     }
+    if (req.user.role === Role.TEACHER) {
+      registerDTO.schoolId = req.user.schoolId;
+    }
+    const school = await this.schoolService.getSchoolById(registerDTO.schoolId);
+    const countTeacher = await this.userService.countTeacherAccount(
+      registerDTO.schoolId,
+    );
+    const limitTeacher = school?.permission?.maxCreateTeacher as number;
+
+    if (!school?.permission?.canCreateUser && req.user.role === Role.TEACHER) {
+      throw new HttpException(
+        'Can Not Have Permission Create User',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+
+    if (countTeacher >= limitTeacher) {
+      throw new HttpException(
+        `Over limit Create Teacher ${school?.permission?.maxCreateTeacher}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const invalidUsername = await this.userService.getUserByUsername(
       registerDTO.username,
     );
-    const invalidEmail = await this.userService.getUserByEmail(
-      registerDTO.email,
-    );
-    if (invalidUsername || invalidEmail) {
+
+    if (
+      invalidUsername?.username ||
+      invalidUsername?.email === registerDTO.email
+    ) {
       throw new HttpException(
         'Already have Username or Email',
         HttpStatus.NOT_ACCEPTABLE,
       );
     }
+
     const user = await this.userService.createUser(registerDTO, Role.TEACHER);
     return {
       message: 'Successfully Create Teacher Account',
       data: user,
     };
   }
-
   @ApiOperation({ summary: 'Create Student Account (Teacher,Admin)' })
   @UseGuards(AuthGuard('jwt'))
   @Post('create-student')
@@ -247,19 +274,42 @@ export class UserController {
     @Request() req: IRequest,
     @Body() registerDTO: RegisterDTO,
   ) {
-    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
       throw new HttpException(
         'Do Not Have Permission(Teacher,Admin)',
         HttpStatus.FORBIDDEN,
       );
     }
+    if (req.user.role === Role.TEACHER) {
+      registerDTO.schoolId = req.user.schoolId;
+    }
+    const school = await this.schoolService.getSchoolById(registerDTO.schoolId);
+    const countStudent = await this.userService.countStudentAccount(
+      registerDTO.schoolId,
+    );
+    const limitTeacher = school?.permission?.maxCreateStudent as number;
+
+    if (!school?.permission?.canCreateUser && req.user.role === Role.TEACHER) {
+      throw new HttpException(
+        'Can Not Have Permission Create User',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+
+    if (countStudent >= limitTeacher) {
+      throw new HttpException(
+        `Over limit Create Student ${school?.permission?.maxCreateStudent}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     const invalidUsername = await this.userService.getUserByUsername(
       registerDTO.username,
     );
-    const invalidEmail = await this.userService.getUserByEmail(
-      registerDTO.email,
-    );
-    if (invalidUsername || invalidEmail) {
+
+    if (
+      invalidUsername?.username ||
+      invalidUsername?.email === registerDTO.email
+    ) {
       throw new HttpException(
         'Already have Username or Email',
         HttpStatus.NOT_ACCEPTABLE,
@@ -297,11 +347,22 @@ export class UserController {
     @Param('username') username: string,
     @Body() updateUserDTO: UpdateUserDTO,
   ) {
-    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
       throw new HttpException(
         'Do Not Have Permission(Teacher,Admin)',
         HttpStatus.FORBIDDEN,
       );
+    }
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
+      const permission = await this.schoolService.getSchoolById(
+        req.user.schoolId,
+      );
+      if (!permission?.permission?.canUpdateUser) {
+        throw new HttpException(
+          'Can Not Have Permission Update User',
+          HttpStatus.NOT_ACCEPTABLE,
+        );
+      }
     }
     const invalidUser = await this.userService.getUserByUsername(username);
     if (!invalidUser) {
@@ -324,13 +385,23 @@ export class UserController {
     @Request() req: IRequest,
     @Param('username') username: string,
   ) {
-    if (req.user.role !== (Role.ADMIN || Role.TEACHER)) {
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
       throw new HttpException(
         'Do Not Have Permission(Teacher,Admin)',
         HttpStatus.FORBIDDEN,
       );
     }
-
+    if (req.user.role !== Role.ADMIN && req.user.role === Role.TEACHER) {
+      const permission = await this.schoolService.getSchoolById(
+        req.user.schoolId,
+      );
+      if (!permission?.permission?.canDeleteUser) {
+        throw new HttpException(
+          'Can Not Have Permission Delete User',
+          HttpStatus.NOT_ACCEPTABLE,
+        );
+      }
+    }
     if (req.user.username === username) {
       throw new HttpException(
         'Can Not Delete Your Self',
