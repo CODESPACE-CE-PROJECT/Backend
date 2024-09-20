@@ -1,9 +1,5 @@
-import {
-  HttpCode,
-  HttpException,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
 import { SchoolService } from 'src/school/school.service';
 import { UserService } from 'src/user/user.service';
@@ -13,6 +9,7 @@ export class InitService {
   constructor(
     private readonly userService: UserService,
     private readonly schoolService: SchoolService,
+    private readonly configService: ConfigService,
   ) {}
 
   async InitialAdmin() {
@@ -30,9 +27,9 @@ export class InitService {
 
       const adminDTO = {
         schoolId: school.schoolId,
-        username: 'admin',
+        username: this.configService.get('ADMIN_USERNAME'),
         email: '',
-        password: 'admin',
+        password: this.configService.get('ADMIN_PASS'),
         studentNo: '',
         firstName: 'Admin',
         lastName: 'Admin',

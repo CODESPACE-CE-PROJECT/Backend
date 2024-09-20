@@ -6,7 +6,6 @@ import { SchoolModule } from './school/school.module';
 import { MinioClientModule } from './minio-client/minio-client.module';
 import { InitModule } from './init/init.module';
 import { PermissionModule } from './permission/permission.module';
-import { CourseModule } from './course/course.module';
 
 @Module({
   imports: [
@@ -20,7 +19,6 @@ import { CourseModule } from './course/course.module';
     MinioClientModule,
     InitModule,
     PermissionModule,
-    CourseModule,
   ],
 })
 export class AppModule {}
