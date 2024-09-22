@@ -6,6 +6,10 @@ import { SchoolModule } from './school/school.module';
 import { MinioClientModule } from './minio-client/minio-client.module';
 import { InitModule } from './init/init.module';
 import { PermissionModule } from './permission/permission.module';
+import { CourseModule } from './course/course.module';
+import { CourseStudentModule } from './course-student/course-student.module';
+import { CourseTeacherService } from './course-teacher/course-teacher.service';
+import { CourseTeacherModule } from './course-teacher/course-teacher.module';
 
 @Module({
   imports: [
@@ -19,6 +23,9 @@ import { PermissionModule } from './permission/permission.module';
     MinioClientModule,
     InitModule,
     PermissionModule,
+    CourseModule,
+    CourseStudentModule,
+    CourseTeacherModule,
   ],
 })
 export class AppModule {}

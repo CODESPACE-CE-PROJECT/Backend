@@ -287,7 +287,7 @@ export class UserController {
     const countStudent = await this.userService.countStudentAccount(
       registerDTO.schoolId,
     );
-    const limitTeacher = school?.permission?.maxCreateStudent as number;
+    const limitStudent = school?.permission?.maxCreateStudent as number;
 
     if (!school?.permission?.canCreateUser && req.user.role === Role.TEACHER) {
       throw new HttpException(
@@ -296,7 +296,7 @@ export class UserController {
       );
     }
 
-    if (countStudent >= limitTeacher) {
+    if (countStudent >= limitStudent) {
       throw new HttpException(
         `Over limit Create Student ${school?.permission?.maxCreateStudent}`,
         HttpStatus.BAD_REQUEST,

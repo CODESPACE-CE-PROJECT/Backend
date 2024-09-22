@@ -12,6 +12,7 @@ model School {
   schoolId   String       @id @default(uuid())
   schoolName String
   users      Users[]
+  courses    Course[]
   permission Permission?
 }
 
@@ -19,11 +20,11 @@ model Permission {
   permissionId              String  @id @default(uuid())
   maxCreateTeacher          Int
   maxCreateStudent          Int
-  maxCreateCoursePerTeacher Int
+  maxCreateCoursePerTeacher Int 
   canCreateUser             Boolean
   canUpdateUser             Boolean
   canDeleteUser             Boolean
-  school                    School  @relation(fields: [schoolId], references: [schoolId])
+  school                    School  @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   schoolId                  String  @unique
 }
 
@@ -43,7 +44,7 @@ model Users {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   workSpace      WorkSpace[]
-  school         School          @relation(fields: [schoolId], references: [schoolId])
+  school         School          @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   schoolId       String
   courseAnnounce CourseAnnounce?
   courseStudent  CourseStudent[]
@@ -64,51 +65,53 @@ enum Role {
 
 model WorkSpace {
   codeSpaceId  String @id @default(uuid())
-  user         Users  @relation(fields: [userId], references: [username])
+  user         Users  @relation(fields: [userId], references: [username], onDelete: Cascade)
   userId       String
   language     String
   sourceCode   String
   fileName     String
-  hashFilename String
 }
 
 model Course {
   courseId       String           @id @default(uuid())
   title          String
   description    String?
+  username       String
   courseAnnounce CourseAnnounce[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   courseStudent  CourseStudent[]
   courseTeacher  CourseTeacher[]
-  Assignment     Assignment[]
+  assignment     Assignment[]
+  school         School @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  schoolId       String
 }
 
 model CourseAnnounce {
   courseAnnounceId String   @id @default(uuid())
   title            String
   description      String
-  user             Users    @relation(fields: [userId], references: [username])
+  user             Users    @relation(fields: [userId], references: [username], onDelete: Cascade)
   userId           String   @unique
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  course           Course   @relation(fields: [courseId], references: [courseId])
+  course           Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   courseId         String
 }
 
 model CourseStudent {
   courseStudentId String @id @default(uuid())
-  user            Users  @relation(fields: [userId], references: [username])
-  userId          String
-  course          Course @relation(fields: [courseId], references: [courseId])
+  user            Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username        String
+  course          Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   courseId        String
 }
 
 model CourseTeacher {
-  courseStudentId String @id @default(uuid())
-  user            Users  @relation(fields: [userId], references: [username])
-  userId          String
-  course          Course @relation(fields: [courseId], references: [courseId])
+  courseTeachertId String @id @default(uuid())
+  user            Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username        String
+  course          Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   courseId        String
 }
 
@@ -121,7 +124,7 @@ model Assignment {
   expireAt     DateTime
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  course       Course         @relation(fields: [courseId], references: [courseId])
+  course       Course         @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   courseId     String
   Problem      Problem[]
 }
@@ -142,17 +145,19 @@ model Problem {
   constraints  String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId])
+  assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId], onDelete: Cascade)
   assignmentId String
   testCases    TestCase[]
   submission   Submission[]
+  constraint   Constraint[]
 }
 
 model TestCase {
   testCaseId String  @id @default(uuid())
   input      String
   output     String
-  problem    Problem @relation(fields: [problemId], references: [problemId])
+  isHidden   Boolean
+  problem    Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
   problemId  String
 }
 
@@ -162,8 +167,18 @@ model Submission {
   result       String
   status       Boolean
   createdAt    DateTime @default(now())
-  user         Users    @relation(fields: [userId], references: [username])
+  user         Users    @relation(fields: [userId], references: [username], onDelete: Cascade)
   userId       String
-  problem      Problem  @relation(fields: [problemId], references: [problemId])
+  problem      Problem  @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
   problemId    String
 }
+
+model Constraint {
+  constraintId  String @id @default(uuid())
+  type          String
+  keyword       String
+  quantities    Int
+  problem       Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  problemId     String
+}
+
