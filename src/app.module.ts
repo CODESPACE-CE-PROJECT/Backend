@@ -10,6 +10,8 @@ import { CourseModule } from './course/course.module';
 import { CourseStudentModule } from './course-student/course-student.module';
 import { CourseTeacherService } from './course-teacher/course-teacher.service';
 import { CourseTeacherModule } from './course-teacher/course-teacher.module';
+import { AnnounceModule } from './announce/announce.module';
+import { ReplyModule } from './reply/reply.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { CourseTeacherModule } from './course-teacher/course-teacher.module';
     CourseModule,
     CourseStudentModule,
     CourseTeacherModule,
+    AnnounceModule,
+    ReplyModule,
   ],
 })
 export class AppModule {}

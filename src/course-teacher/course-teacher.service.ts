@@ -43,6 +43,23 @@ export class CourseTeacherService {
     }
   }
 
+  async getCourseTeacherByUsernameAndCourseId(
+    username: string,
+    courseId: string,
+  ) {
+    try {
+      const courseTeacher = await this.prisma.courseTeacher.findFirst({
+        where: {
+          username: username,
+          courseId: courseId,
+        },
+      });
+      return courseTeacher;
+    } catch (error) {
+      throw new Error('Error Fetch Course Student');
+    }
+  }
+
   async addTeacherToCourse(username: string, courseId: string) {
     try {
       const user = await this.prisma.courseTeacher.create({

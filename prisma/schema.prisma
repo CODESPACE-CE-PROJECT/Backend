@@ -46,7 +46,7 @@ model Users {
   workSpace      WorkSpace[]
   school         School          @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   schoolId       String
-  courseAnnounce CourseAnnounce?
+  courseAnnounce CourseAnnounce[]
   courseStudent  CourseStudent[]
   courseTeacher  CourseTeacher[]
   submission     Submission[]
@@ -91,8 +91,8 @@ model CourseAnnounce {
   courseAnnounceId String   @id @default(uuid())
   title            String
   description      String
-  user             Users    @relation(fields: [userId], references: [username], onDelete: Cascade)
-  userId           String   @unique
+  user             Users    @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String      
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   course           Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
