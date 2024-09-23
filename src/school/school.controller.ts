@@ -196,13 +196,6 @@ export class SchoolController {
         HttpStatus.FORBIDDEN,
       );
     }
-    const invalidSchool = await this.schoolService.getSchoolById(id);
-    if (!invalidSchool) {
-      throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
-    }
-    await this.permissionService.deletePermissionSchoolByPermisssionId(
-      invalidSchool?.permission?.permissionId,
-    );
 
     const school = await this.schoolService.deleteSchoolById(id);
     if (!school) {
