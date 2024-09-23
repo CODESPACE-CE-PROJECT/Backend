@@ -83,18 +83,13 @@ export class AnnounceController {
       );
     }
 
-    const courseStudent =
-      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        createAnnnounceDTO.courseId,
-      );
     const courseTeacher =
       await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
         req.user.username,
         createAnnnounceDTO.courseId,
       );
 
-    if (!courseStudent && !courseTeacher) {
+    if (!courseTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
@@ -128,18 +123,14 @@ export class AnnounceController {
     if (!invalidAnnounce) {
       throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
     }
-    const courseStudent =
-      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        invalidAnnounce.courseId,
-      );
+
     const courseTeacher =
       await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
         req.user.username,
         invalidAnnounce.courseId,
       );
 
-    if (!courseStudent && !courseTeacher) {
+    if (!courseTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
@@ -171,18 +162,13 @@ export class AnnounceController {
       throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseStudent =
-      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        invalidAnnounce.courseId,
-      );
     const courseTeacher =
       await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
         req.user.username,
         invalidAnnounce.courseId,
       );
 
-    if (!courseStudent && !courseTeacher) {
+    if (!courseTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
     const announce = await this.announceService.deleteAnnounceById(id);
@@ -219,6 +205,16 @@ export class AnnounceController {
       );
     }
 
+    const courseTeacher =
+      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
+        req.user.username,
+        courseAnnounce.courseId,
+      );
+
+    if (!courseTeacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
     const reply = await this.replyService.createReplyByAnnounceId(
       createReplyDTO,
       req.user.username,
@@ -238,6 +234,22 @@ export class AnnounceController {
     @Request() req: IRequest,
     @Param('announceId') announceId: string,
   ) {
+    const announce = await this.announceService.getAnnouceById(announceId);
+    const courseStudent =
+      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
+        req.user.username,
+        announce?.courseId as string,
+      );
+    const courseTeacher =
+      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
+        req.user.username,
+        announce?.courseId as string,
+      );
+
+    if (!courseStudent && !courseTeacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
     const reply = await this.replyService.getReplyByAnnounceId(announceId);
     if (reply.length === 0) {
       throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
@@ -250,7 +262,7 @@ export class AnnounceController {
   }
 
   @ApiOperation({
-    summary: 'Update Reply By Id (Teacher, Student)',
+    summary: 'Update Reply By Reply Id (Teacher, Student)',
   })
   @UseGuards(AuthGuard('jwt'))
   @Patch('reply/edit/:id')
@@ -269,6 +281,24 @@ export class AnnounceController {
     const invalidReply = await this.replyService.getReplyById(id);
     if (!invalidReply) {
       throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const announce = await this.announceService.getAnnouceById(
+      invalidReply.courseAnnounceId,
+    );
+    const courseStudent =
+      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
+        req.user.username,
+        announce?.courseId as string,
+      );
+    const courseTeacher =
+      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
+        req.user.username,
+        announce?.courseId as string,
+      );
+
+    if (!courseStudent && !courseTeacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
     const reply = await this.replyService.updateReplyById(updateReplyDTO, id);
