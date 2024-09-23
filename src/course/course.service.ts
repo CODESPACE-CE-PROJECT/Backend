@@ -65,7 +65,7 @@ export class CourseService {
 
   async getCourseByUsername(username: string, role: string) {
     try {
-      var courses: any;
+      let courses: any;
       if (role === Role.STUDENT) {
         courses =
           await this.courseStudentService.getCourseIdByUsername(username);

@@ -8,7 +8,6 @@ import { InitModule } from './init/init.module';
 import { PermissionModule } from './permission/permission.module';
 import { CourseModule } from './course/course.module';
 import { CourseStudentModule } from './course-student/course-student.module';
-import { CourseTeacherService } from './course-teacher/course-teacher.service';
 import { CourseTeacherModule } from './course-teacher/course-teacher.module';
 import { AnnounceModule } from './announce/announce.module';
 import { ReplyModule } from './reply/reply.module';
