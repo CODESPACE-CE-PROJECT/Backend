@@ -7,7 +7,6 @@ import {
   HttpException,
   HttpStatus,
   Post,
-  Bind,
   Body,
   Patch,
   Delete,
@@ -21,6 +20,9 @@ import { Role } from '@prisma/client';
 import { UpdateAnnounceDTO } from './dto/updateAnnounce.dto';
 import { CourseStudentService } from 'src/course-student/course-student.service';
 import { CourseTeacherService } from 'src/course-teacher/course-teacher.service';
+import { ReplyService } from 'src/reply/reply.service';
+import { CreateReplyDTO } from 'src/reply/dto/createReply.dto';
+import { UpdateReplyDTO } from 'src/reply/dto/updateReply.dto';
 
 @ApiTags('Announce')
 @Controller('announce')
@@ -29,6 +31,7 @@ export class AnnounceController {
     private readonly announceService: AnnounceService,
     private readonly courseStudentSercvice: CourseStudentService,
     private readonly courseTeacherService: CourseTeacherService,
+    private readonly replyService: ReplyService,
   ) {}
 
   @ApiOperation({
@@ -117,7 +120,7 @@ export class AnnounceController {
   ) {
     if (req.user.role !== Role.TEACHER) {
       throw new HttpException(
-        'Do Not Have Permission(Admin)',
+        'Do Not Have Permission(Teahcer)',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -159,7 +162,7 @@ export class AnnounceController {
   async deleteAnnounceById(@Request() req: IRequest, @Param('id') id: string) {
     if (req.user.role !== Role.TEACHER) {
       throw new HttpException(
-        'Do Not Have Permission(Admin)',
+        'Do Not Have Permission(Teacher)',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -187,6 +190,92 @@ export class AnnounceController {
     return {
       message: 'Successfully Delete Announce',
       data: announce,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Create Reply Announce By Announce Id (Teacher, Student)',
+  })
+  @UseGuards(AuthGuard('jwt'))
+  @Post('reply')
+  async createReplyByAnnounceId(
+    @Request() req: IRequest,
+    @Body() createReplyDTO: CreateReplyDTO,
+  ) {
+    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
+      throw new HttpException(
+        'Do Not Have Permission(Teacher, Student)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const courseAnnounce = await this.announceService.getAnnouceById(
+      createReplyDTO.courseAnnounceId,
+    );
+    if (!courseAnnounce) {
+      throw new HttpException(
+        'Course Announce Not Found',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const reply = await this.replyService.createReplyByAnnounceId(
+      createReplyDTO,
+      req.user.username,
+    );
+    return {
+      message: 'Create Reply Successfully',
+      data: reply,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Get Reply Announce By Announce Id (Teacher, Student)',
+  })
+  @UseGuards(AuthGuard('jwt'))
+  @Get('reply/:announceId')
+  async getReplyByAnnnounceId(
+    @Request() req: IRequest,
+    @Param('announceId') announceId: string,
+  ) {
+    const reply = await this.replyService.getReplyByAnnounceId(announceId);
+    if (reply.length === 0) {
+      throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    return {
+      message: 'Successfully Get Reply',
+      data: reply,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Update Reply By Id (Teacher, Student)',
+  })
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('reply/edit/:id')
+  async updateReplyAnnounceById(
+    @Request() req: IRequest,
+    @Param('id') id: string,
+    @Body() updateReplyDTO: UpdateReplyDTO,
+  ) {
+    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
+      throw new HttpException(
+        'Do Not Have Permission(Teacher, Student)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const invalidReply = await this.replyService.getReplyById(id);
+    if (!invalidReply) {
+      throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const reply = await this.replyService.updateReplyById(updateReplyDTO, id);
+
+    return {
+      message: 'Successfully Update Reply',
+      data: reply,
     };
   }
 }

@@ -9,7 +9,7 @@ datasource db {
 }
 
 model School {
-  schoolId   String       @id @default(uuid())
+  schoolId   String      @id @default(uuid())
   schoolName String
   users      Users[]
   courses    Course[]
@@ -20,7 +20,7 @@ model Permission {
   permissionId              String  @id @default(uuid())
   maxCreateTeacher          Int
   maxCreateStudent          Int
-  maxCreateCoursePerTeacher Int 
+  maxCreateCoursePerTeacher Int
   canCreateUser             Boolean
   canUpdateUser             Boolean
   canDeleteUser             Boolean
@@ -29,27 +29,28 @@ model Permission {
 }
 
 model Users {
-  username       String          @id
-  email          String?         
+  username       String           @id
+  email          String?
   hashedPassword String
   studentNo      String?
   firstName      String
   lastName       String
   gender         Gender
-  role           Role            @default(STUDENT)
+  role           Role             @default(STUDENT)
   picture        String?
   containerID    String?
   IpAddress      String?
-  isActived      Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  isActived      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   workSpace      WorkSpace[]
-  school         School          @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   schoolId       String
   courseAnnounce CourseAnnounce[]
   courseStudent  CourseStudent[]
   courseTeacher  CourseTeacher[]
   submission     Submission[]
+  replyAnnounce  ReplyAnnounce[]
 }
 
 enum Gender {
@@ -64,12 +65,12 @@ enum Role {
 }
 
 model WorkSpace {
-  codeSpaceId  String @id @default(uuid())
-  user         Users  @relation(fields: [userId], references: [username], onDelete: Cascade)
-  userId       String
-  language     String
-  sourceCode   String
-  fileName     String
+  codeSpaceId String @id @default(uuid())
+  user        Users  @relation(fields: [userId], references: [username], onDelete: Cascade)
+  userId      String
+  language    String
+  sourceCode  String
+  fileName    String
 }
 
 model Course {
@@ -83,20 +84,32 @@ model Course {
   courseStudent  CourseStudent[]
   courseTeacher  CourseTeacher[]
   assignment     Assignment[]
-  school         School @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   schoolId       String
 }
 
 model CourseAnnounce {
-  courseAnnounceId String   @id @default(uuid())
+  courseAnnounceId String          @id @default(uuid())
   title            String
   description      String
-  user             Users    @relation(fields: [username], references: [username], onDelete: Cascade)
-  username         String      
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  course           Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  user             Users           @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  course           Course          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   courseId         String
+  replyAnnounce    ReplyAnnounce[]
+}
+
+model ReplyAnnounce {
+  replyAnnounceId  String         @id @default(uuid())
+  message          String
+  user             Users          @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String
+  courseAnnounce   CourseAnnounce @relation(fields: [courseAnnounceId], references: [courseAnnounceId], onDelete: Cascade)
+  courseAnnounceId String
+  createAt         DateTime       @default(now())
+  updateAt         DateTime       @updatedAt
 }
 
 model CourseStudent {
@@ -109,10 +122,10 @@ model CourseStudent {
 
 model CourseTeacher {
   courseTeachertId String @id @default(uuid())
-  user            Users  @relation(fields: [username], references: [username], onDelete: Cascade)
-  username        String
-  course          Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  courseId        String
+  user             Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String
+  course           Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  courseId         String
 }
 
 model Assignment {
@@ -174,11 +187,10 @@ model Submission {
 }
 
 model Constraint {
-  constraintId  String @id @default(uuid())
-  type          String
-  keyword       String
-  quantities    Int
-  problem       Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
-  problemId     String
+  constraintId String  @id @default(uuid())
+  type         String
+  keyword      String
+  quantities   Int
+  problem      Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  problemId    String
 }
-
