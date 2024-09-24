@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateAssigmentDTO {
-  @ApiProperty()
-  courseId: string;
-
+export class UpdateAssignmentDTO {
   @ApiProperty()
   title: string;
 

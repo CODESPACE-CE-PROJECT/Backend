@@ -140,7 +140,7 @@ model Assignment {
   updatedAt    DateTime       @updatedAt
   course       Course         @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   courseId     String
-  Problem      Problem[]
+  problem      Problem[]
 }
 
 enum AssignmentType {
@@ -155,8 +155,9 @@ model Problem {
   description  String
   hint         String?
   revaleCode   String?
+  language     LanguageType @default(PYTHON) 
+  score        Int
   isRegex      Boolean      @default(false)
-  constraints  String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId], onDelete: Cascade)
@@ -164,6 +165,13 @@ model Problem {
   testCases    TestCase[]
   submission   Submission[]
   constraint   Constraint[]
+}
+
+enum LanguageType {
+  PYTHON
+  C
+  CPP
+  JAVA
 }
 
 model TestCase {
