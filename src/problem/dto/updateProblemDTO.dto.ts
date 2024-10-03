@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LanguageType } from '@prisma/client';
 
-export class UpdateAssignmentDTO {
+export class UpdateProblemDTO {
   @ApiProperty()
   title: string;
 
@@ -9,11 +8,14 @@ export class UpdateAssignmentDTO {
   description: string;
 
   @ApiProperty()
-  type: string;
+  hint: string;
 
   @ApiProperty()
-  language: LanguageType;
+  revaleCode: string;
 
   @ApiProperty()
-  problemQuantities: number;
+  isRegex: boolean;
+
+  @ApiProperty()
+  score: number;
 }

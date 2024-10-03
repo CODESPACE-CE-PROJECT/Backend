@@ -48,6 +48,8 @@ export class AssignmentService {
               : AssignmentType.EXAM,
           courseId: createAssignmentDTO.courseId,
           isLock: false,
+          language: createAssignmentDTO.language,
+          problemQuantities: createAssignmentDTO.problemQuantities,
         },
       });
       return assignment;
@@ -105,6 +107,8 @@ export class AssignmentService {
             updateAssignmentDTO.type === 'Exercise'
               ? AssignmentType.EXERCISE
               : AssignmentType.EXAM,
+          language: updateAssignmentDTO.language,
+          problemQuantities: updateAssignmentDTO.problemQuantities,
         },
       });
       return assignment;

@@ -13,6 +13,8 @@ import { AnnounceModule } from './announce/announce.module';
 import { ReplyModule } from './reply/reply.module';
 import { AssignmentModule } from './assignment/assignment.module';
 import { ProblemModule } from './problem/problem.module';
+import { SubmissionModule } from './submission/submission.module';
+import { CodeSpaceModule } from './code-space/code-space.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { ProblemModule } from './problem/problem.module';
     ReplyModule,
     AssignmentModule,
     ProblemModule,
+    SubmissionModule,
+    CodeSpaceModule,
   ],
 })
 export class AppModule {}

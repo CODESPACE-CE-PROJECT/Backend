@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { LanguageType } from '@prisma/client';
 
 export class CreateAssigmentDTO {
   @ApiProperty()
@@ -12,4 +13,10 @@ export class CreateAssigmentDTO {
 
   @ApiProperty()
   type: string;
+
+  @ApiProperty()
+  language: LanguageType;
+
+  @ApiProperty()
+  problemQuantities: number;
 }
