@@ -1,0 +1,207 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["omitApi"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  schoolId   String      @id @default(uuid())
+  schoolName String
+  users      Users[]
+  courses    Course[]
+  permission Permission?
+}
+
+model Permission {
+  permissionId              String  @id @default(uuid())
+  maxCreateTeacher          Int
+  maxCreateStudent          Int
+  maxCreateCoursePerTeacher Int
+  canCreateUser             Boolean
+  canUpdateUser             Boolean
+  canDeleteUser             Boolean
+  school                    School  @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  schoolId                  String  @unique
+}
+
+model Users {
+  username       String           @id
+  email          String?
+  hashedPassword String
+  studentNo      String?
+  firstName      String
+  lastName       String
+  gender         Gender
+  role           Role             @default(STUDENT)
+  picture        String?
+  containerID    String?
+  IpAddress      String?
+  isActived      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  codeSpace      CodeSpace[]
+  school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  schoolId       String
+  courseAnnounce CourseAnnounce[]
+  courseStudent  CourseStudent[]
+  courseTeacher  CourseTeacher[]
+  submission     Submission[]
+  replyAnnounce  ReplyAnnounce[]
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model CodeSpace {
+  codeSpaceId String @id @default(uuid())
+  user        Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username    String
+  language    String
+  sourceCode  String
+  fileName    String
+}
+
+model Course {
+  courseId       String           @id @default(uuid())
+  title          String
+  description    String?
+  username       String
+  courseAnnounce CourseAnnounce[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  courseStudent  CourseStudent[]
+  courseTeacher  CourseTeacher[]
+  assignment     Assignment[]
+  school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  schoolId       String
+}
+
+model CourseAnnounce {
+  courseAnnounceId String          @id @default(uuid())
+  title            String
+  description      String
+  user             Users           @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  course           Course          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  courseId         String
+  replyAnnounce    ReplyAnnounce[]
+}
+
+model ReplyAnnounce {
+  replyAnnounceId  String         @id @default(uuid())
+  message          String
+  user             Users          @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String
+  courseAnnounce   CourseAnnounce @relation(fields: [courseAnnounceId], references: [courseAnnounceId], onDelete: Cascade)
+  courseAnnounceId String
+  createAt         DateTime       @default(now())
+  updateAt         DateTime       @updatedAt
+}
+
+model CourseStudent {
+  courseStudentId String @id @default(uuid())
+  user            Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username        String
+  course          Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  courseId        String
+}
+
+model CourseTeacher {
+  courseTeachertId String @id @default(uuid())
+  user             Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username         String
+  course           Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  courseId         String
+}
+
+model Assignment {
+  assignmentId      String         @id @default(uuid())
+  title             String
+  description       String
+  isLock            Boolean
+  language          LanguageType   @default(PYTHON)
+  problemQuantities Int            @default(1)
+  type              AssignmentType
+  startAt           DateTime?
+  expireAt          DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  course            Course         @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  courseId          String
+  problem           Problem[]
+}
+
+enum AssignmentType {
+  EXERCISE
+  QUIZ
+  EXAM
+}
+
+model Problem {
+  problemId    String       @id @default(uuid())
+  title        String
+  description  String
+  hint         String?
+  revaleCode   String?
+  score        Int
+  isRegex      Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId], onDelete: Cascade)
+  assignmentId String
+  testCases    TestCase[]
+  submission   Submission[]
+  constraint   Constraint[]
+}
+
+enum LanguageType {
+  PYTHON
+  C
+  CPP
+  JAVA
+}
+
+model TestCase {
+  testCaseId String  @id @default(uuid())
+  input      String
+  output     String
+  isHidden   Boolean
+  problem    Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  problemId  String
+}
+
+model Submission {
+  submissionId String   @id @default(uuid())
+  sourceCode   String
+  result       String
+  status       Boolean
+  no           Int
+  createdAt    DateTime @default(now())
+  user         Users    @relation(fields: [userId], references: [username], onDelete: Cascade)
+  userId       String
+  problem      Problem  @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  problemId    String
+}
+
+model Constraint {
+  constraintId String  @id @default(uuid())
+  type         String
+  keyword      String
+  quantities   Int
+  problem      Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  problemId    String
+}
