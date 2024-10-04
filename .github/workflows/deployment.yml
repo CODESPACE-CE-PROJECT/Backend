@@ -27,19 +27,30 @@ jobs:
             - name: Clone Repo 🤖
               uses: actions/checkout@v3
 
-            - name: Set Environment Variables
+            - name: Set Environment Variables 🔠
+              env: 
+                DATABASE_URL: ${{ secrets.DATABASE_URL }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
+                GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+                GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+                MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+                MINIO_ACCESSKEY: ${{ secrets.MINIO_ACCESSKEY }}
+                MINIO_SECRETKEY: ${{ secrets.MINIO_SECRETKEY }}
+                MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
+                ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+                ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
               run: |
-                export DATABASE_URL=${{ secrets.DATABASE_URL }}
-                echo ${{ secrets.DATABASE_URL }}
-                export JWT_SECRET=${{ secrets.JWT_SECRET }}
-                export GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-                export GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-                export MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
-                export MINIO_ACCESSKEY=${{ secrets.MINIO_ACCESSKEY }}
-                export MINIO_SECRETKEY=${{ secrets.MINIO_SECRETKEY }}
-                export MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}
-                export ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
-                export ADMIN_PASS=${{ secrets.ADMIN_PASS }}
+                export DATABASE_URL=$DATABASE_URL
+                echo $DATABASE_URL
+                export JWT_SECRET=$JWT_SECRET
+                export GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+                export GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+                export MINIO_ENDPOINT=$MINIO_ENDPOINT
+                export MINIO_ACCESSKEY=$MINIO_ACCESSKEY
+                export MINIO_SECRETKEY=$MINIO_SECRETKEY
+                export MINIO_BUCKET=$MINIO_BUCKET
+                export ADMIN_USERNAME=$ADMIN_USERNAME
+                export ADMIN_PASS=$ADMIN_PASS
             
             - name: Clear Cache 🫧
               run: |
