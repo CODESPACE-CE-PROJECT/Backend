@@ -30,6 +30,7 @@ jobs:
             - name: Set Environment Variables
               run: |
                 export DATABASE_URL=${{ secrets.DATABASE_URL }}
+                echo ${{ secrets.DATABASE_URL }}
                 export JWT_SECRET=${{ secrets.JWT_SECRET }}
                 export GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
                 export GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
