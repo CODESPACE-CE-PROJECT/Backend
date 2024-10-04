@@ -24,7 +24,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET}
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASS: ${ADMIN_PASS}
-      ASSIGNMENT_LIMIT: 10
+      ASSIGNMENT_LIMIT: 10 
     labels:
       traefik.enable: "true"
       traefik.http.services.codespace-api.loadbalancer.server.port: "3000"
