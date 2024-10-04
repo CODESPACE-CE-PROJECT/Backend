@@ -1,22 +1,38 @@
-version: '3'
+---
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true
 services:
   backend:
     container_name: backend
     build:
       context: .
       dockerfile: Dockerfile
-    
-    ports:
-      - 3003:3000
-    
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET} 
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: true
+      MINIO_ACCESSKEY: ${MINIO_ACCESSKEY}
+      MINIO_SECRETKEY: ${MINIO_SECRETKEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASS: ${ADMIN_PASS}
+      ASSIGNMENT_LIMIT: 10
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.codespace-api.loadbalancer.server.port: "3000"
+      traefik.http.services.codespace-api.loadbalancer.server.scheme: "http"
+      traefik.http.routers.codespace-api-https.entrypoints: "websecure"
+      traefik.http.routers.codespace-api-https.rule: "Host(`codespace-api.srv-demo-2.home.unixvextor.com`)"
+      traefik.http.routers.codespace-api-https.tls: "true"
+      traefik.http.routers.codespace-api-https.tls.certresolver: "cloudflare" 
     networks:
       - backend
       - frontend
-
-    restart: always
-
-networks:
-  backend:
-    external: true
-  frontend:
-    external: true
