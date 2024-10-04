@@ -40,17 +40,16 @@ jobs:
                 ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
                 ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
               run: |
-                export DATABASE_URL=$DATABASE_URL
-                echo $DATABASE_URL
-                export JWT_SECRET=$JWT_SECRET
-                export GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-                export GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-                export MINIO_ENDPOINT=$MINIO_ENDPOINT
-                export MINIO_ACCESSKEY=$MINIO_ACCESSKEY
-                export MINIO_SECRETKEY=$MINIO_SECRETKEY
-                export MINIO_BUCKET=$MINIO_BUCKET
-                export ADMIN_USERNAME=$ADMIN_USERNAME
-                export ADMIN_PASS=$ADMIN_PASS
+                echo "DATABASE_URL=$DATABASE_URL" >> .env
+                echo "JWT_SECRET=$JWT_SECRET" >> .env
+                echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+                echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+                echo "MINIO_ENDPOINT=$MINIO_ENDPOINT" >> .env
+                echo "MINIO_ACCESSKEY=$MINIO_ACCESSKEY" >> .env
+                echo "MINIO_SECRETKEY=$MINIO_SECRETKEY" >> .env
+                echo "MINIO_BUCKET=$MINIO_BUCKET" >> .env
+                echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
+                echo "ADMIN_PASS=$ADMIN_PASS" >> .env
             
             - name: Clear Cache 🫧
               run: |
