@@ -1,71 +1,72 @@
 name: Deployment
 
-on: 
-    push: 
-        branches: ['main']
-    pull_request:
-        branches: ['dev']
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['dev']
 
 jobs:
-    sonarqube:
-      runs-on: self-hosted
-      if: github.event_name == 'pull_request'
+  sonarqube:
+    runs-on: self-hosted
+    if: github.event_name == 'pull_request'
 
-      name: Build and Analyze
-      steps:
-        - uses: actions/checkout@v4
-          with:
-            fetch-depth: 0 
-        - uses: sonarsource/sonarqube-scan-action@master
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-    deploy:
-        runs-on: self-hosted
-        if: github.event_name == 'push'
-        steps:
-            - name: Clone Repo 🤖
-              uses: actions/checkout@v3
+    name: Build and Analyze
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  deploy:
+    runs-on: self-hosted
+    if: github.event_name == 'push'
+    steps:
+      - name: Clone Repo 🤖
+        uses: actions/checkout@v3
 
-            - name: Set Environment Variables 🔠
-              env: 
-                DATABASE_URL: ${{ secrets.DATABASE_URL }}
-                JWT_SECRET: ${{ secrets.JWT_SECRET }}
-                GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-                GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-                MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
-                MINIO_ACCESSKEY: ${{ secrets.MINIO_ACCESSKEY }}
-                MINIO_SECRETKEY: ${{ secrets.MINIO_SECRETKEY }}
-                MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
-                ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
-                ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
-              run: |
-                echo "DATABASE_URL=$DATABASE_URL" >> .env
-                echo "JWT_SECRET=$JWT_SECRET" >> .env
-                echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
-                echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
-                echo "MINIO_ENDPOINT=$MINIO_ENDPOINT" >> .env
-                echo "MINIO_ACCESSKEY=$MINIO_ACCESSKEY" >> .env
-                echo "MINIO_SECRETKEY=$MINIO_SECRETKEY" >> .env
-                echo "MINIO_BUCKET=$MINIO_BUCKET" >> .env
-                echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
-                echo "ADMIN_PASS=$ADMIN_PASS" >> .env
-            
-            - name: Clear Cache 🫧
-              run: |
-                docker stop backend || true
-                docker rm backend || true
-                docker rmi backend-backend:latest || true
-            
-            - name: Run Image ✅
-              run: |
-                docker compose -f docker-compose.prod.yaml up -d
-            
-            - name: Message ✉️
-              uses: fjogeleit/http-request-action@v1
-              with:
-                timeout: 60000
-                url: ${{ secrets.DISCORD_WEBHOOK }}
-                method: 'POST'
-                customHeaders: '{"Content-Type": "application/json"}'
-                data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://codespace-api.unixvextor.com"}]}'
+      - name: Set Environment Variables 🔠
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_ACCESSKEY: ${{ secrets.MINIO_ACCESSKEY }}
+          MINIO_SECRETKEY: ${{ secrets.MINIO_SECRETKEY }}
+          MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" >> .env
+          echo "JWT_SECRET=$JWT_SECRET" >> .env
+          echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+          echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+          echo "MINIO_ENDPOINT=$MINIO_ENDPOINT" >> .env
+          echo "MINIO_ACCESSKEY=$MINIO_ACCESSKEY" >> .env
+          echo "MINIO_SECRETKEY=$MINIO_SECRETKEY" >> .env
+          echo "MINIO_BUCKET=$MINIO_BUCKET" >> .env
+          echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
+          echo "ADMIN_PASS=$ADMIN_PASS" >> .env
+
+      - name: Clear Cache 🫧
+        run: |
+          docker stop backend || true
+          docker rm backend || true
+          docker rmi backend-backend:latest || true
+
+      - name: Run Image ✅
+        run: |
+          docker compose -f docker-compose.prod.yaml up -d
+
+      - name: Message ✉️
+        uses: fjogeleit/http-request-action@v1
+        with:
+          timeout: 60000
+          url: ${{ secrets.DISCORD_WEBHOOK }}
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://codespace-api.srv-demo-2.home.unixvextor.com"}]}'
+
