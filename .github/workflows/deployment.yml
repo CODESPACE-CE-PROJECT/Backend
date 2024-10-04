@@ -48,7 +48,7 @@ jobs:
             
             - name: Run Image ✅
               run: |
-                docker compose up -d
+                docker compose -f docker-compose.prod.yaml up -d
             
             - name: Message ✉️
               uses: fjogeleit/http-request-action@v1
@@ -57,4 +57,4 @@ jobs:
                 url: ${{ secrets.DISCORD_WEBHOOK }}
                 method: 'POST'
                 customHeaders: '{"Content-Type": "application/json"}'
-                data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://ide-api.unixvextor.com"}]}'
+                data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://codespace-api.unixvextor.com"}]}'
