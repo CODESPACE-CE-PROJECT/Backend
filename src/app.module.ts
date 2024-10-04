@@ -15,6 +15,7 @@ import { AssignmentModule } from './assignment/assignment.module';
 import { ProblemModule } from './problem/problem.module';
 import { SubmissionModule } from './submission/submission.module';
 import { CodeSpaceModule } from './code-space/code-space.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -38,5 +39,6 @@ import { CodeSpaceModule } from './code-space/code-space.module';
     SubmissionModule,
     CodeSpaceModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
