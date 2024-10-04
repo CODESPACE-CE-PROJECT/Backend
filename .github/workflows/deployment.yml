@@ -27,18 +27,18 @@ jobs:
             - name: Clone Repo 🤖
               uses: actions/checkout@v3
 
-            - name: Set Environment
+            - name: Set Environment Variables
               run: |
-                export DATABASE_URL=${{secrets.DATABASE_URL}}
-                export JWT_SECRET=${{secrets.JWT_SECRET}}
-                export GOOGLE_CLIENT_ID=${{secrets.GOOGLE_CLIENT_ID}}
-                export GOOGLE_CLIENT_SECRET=${{secrets.GOOGLE_CLIENT_SECRET}}
-                export MINIO_ENDPOINT=${{secrets.MINIO_ENDPOINT}}
-                export MINIO_ACCESSKEY=${{secrets.MINIO_ACCESSKEY}}
-                export MINIO_SECRETKEY=${{secrets.MINIO_SECRETKEY}}
-                export MINIO_BUCKET=${{secrets.MINIO_BUCKET}}
-                export ADMIN_USERNAME=${{secrets.ADMIN_USERNAME}}
-                export ADMIN_PASS=${{secrets.ADMIN_PASS}}
+                export DATABASE_URL=${{ secrets.DATABASE_URL }}
+                export JWT_SECRET=${{ secrets.JWT_SECRET }}
+                export GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+                export GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+                export MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
+                export MINIO_ACCESSKEY=${{ secrets.MINIO_ACCESSKEY }}
+                export MINIO_SECRETKEY=${{ secrets.MINIO_SECRETKEY }}
+                export MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}
+                export ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+                export ADMIN_PASS=${{ secrets.ADMIN_PASS }}
             
             - name: Clear Cache 🫧
               run: |
