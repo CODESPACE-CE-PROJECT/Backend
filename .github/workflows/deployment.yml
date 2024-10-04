@@ -39,6 +39,7 @@ jobs:
           MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+          DOMAIN_URL: ${{ secrets.DOMAIN_URL }}
         run: |
           echo "DATABASE_URL=$DATABASE_URL" >> .env
           echo "JWT_SECRET=$JWT_SECRET" >> .env
@@ -50,6 +51,7 @@ jobs:
           echo "MINIO_BUCKET=$MINIO_BUCKET" >> .env
           echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
           echo "ADMIN_PASS=$ADMIN_PASS" >> .env
+          echo "DOMAIN_URL=$DOMAIN_URL" >> .env
 
       - name: Clear Cache 🫧
         run: |
