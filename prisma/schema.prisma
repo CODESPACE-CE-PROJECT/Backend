@@ -43,7 +43,7 @@ model Users {
   isActived      Boolean          @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  workSpace      WorkSpace[]
+  codeSpace      CodeSpace[]
   school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   schoolId       String
   courseAnnounce CourseAnnounce[]
@@ -64,10 +64,10 @@ enum Role {
   ADMIN
 }
 
-model WorkSpace {
+model CodeSpace {
   codeSpaceId String @id @default(uuid())
-  user        Users  @relation(fields: [userId], references: [username], onDelete: Cascade)
-  userId      String
+  user        Users  @relation(fields: [username], references: [username], onDelete: Cascade)
+  username    String
   language    String
   sourceCode  String
   fileName    String
@@ -129,17 +129,20 @@ model CourseTeacher {
 }
 
 model Assignment {
-  assignmentId String         @id @default(uuid())
-  title        String
-  description  String
-  isLock       Boolean
-  type         AssignmentType
-  expireAt     DateTime
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  course       Course         @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  courseId     String
-  Problem      Problem[]
+  assignmentId      String         @id @default(uuid())
+  title             String
+  description       String
+  isLock            Boolean
+  language          LanguageType   @default(PYTHON)
+  problemQuantities Int            @default(1)
+  type              AssignmentType
+  startAt           DateTime?
+  expireAt          DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  course            Course         @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  courseId          String
+  problem           Problem[]
 }
 
 enum AssignmentType {
@@ -154,8 +157,8 @@ model Problem {
   description  String
   hint         String?
   revaleCode   String?
+  score        Int
   isRegex      Boolean      @default(false)
-  constraints  String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId], onDelete: Cascade)
@@ -163,6 +166,13 @@ model Problem {
   testCases    TestCase[]
   submission   Submission[]
   constraint   Constraint[]
+}
+
+enum LanguageType {
+  PYTHON
+  C
+  CPP
+  JAVA
 }
 
 model TestCase {
@@ -179,6 +189,7 @@ model Submission {
   sourceCode   String
   result       String
   status       Boolean
+  no           Int
   createdAt    DateTime @default(now())
   user         Users    @relation(fields: [userId], references: [username], onDelete: Cascade)
   userId       String

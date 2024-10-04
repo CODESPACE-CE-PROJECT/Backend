@@ -11,6 +11,10 @@ import { CourseStudentModule } from './course-student/course-student.module';
 import { CourseTeacherModule } from './course-teacher/course-teacher.module';
 import { AnnounceModule } from './announce/announce.module';
 import { ReplyModule } from './reply/reply.module';
+import { AssignmentModule } from './assignment/assignment.module';
+import { ProblemModule } from './problem/problem.module';
+import { SubmissionModule } from './submission/submission.module';
+import { CodeSpaceModule } from './code-space/code-space.module';
 
 @Module({
   imports: [
@@ -29,6 +33,10 @@ import { ReplyModule } from './reply/reply.module';
     CourseTeacherModule,
     AnnounceModule,
     ReplyModule,
+    AssignmentModule,
+    ProblemModule,
+    SubmissionModule,
+    CodeSpaceModule,
   ],
 })
 export class AppModule {}
