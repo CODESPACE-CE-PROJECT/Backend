@@ -5,12 +5,14 @@ import { Role, Gender, Users } from '@prisma/client';
 import { UpdateUserDTO } from './dto/upadteUser.dto';
 import * as bcrypt from 'bcrypt';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
     private readonly minioClient: MinioClientService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getAllUser() {
@@ -33,7 +35,11 @@ export class UserService {
           username: username,
         },
       });
-      return user;
+      const profileUrl = await this.minioClient.getFileUrl(
+        this.configService.get('MINIO_BUCKET') as string,
+        user?.picture as string,
+      );
+      return { user, profileUrl };
     } catch (error) {
       throw new Error('Error Fetch User');
     }
@@ -49,7 +55,11 @@ export class UserService {
           email: email,
         },
       });
-      return user;
+      const profileUrl = await this.minioClient.getFileUrl(
+        this.configService.get('MINIO_BUCKET') as string,
+        user?.picture as string,
+      );
+      return { user, profileUrl };
     } catch (error) {
       throw new Error('Error Fetch User');
     }
