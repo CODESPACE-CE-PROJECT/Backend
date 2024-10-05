@@ -119,12 +119,8 @@ export class UserController {
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
   async getProfile(@Request() req: IRequest) {
-    const { user, profileUrl } = await this.userService.getUserByUsername(
-      req.user.username,
-    );
-    if (user) {
-      user.picture = profileUrl;
-    }
+    const user = await this.userService.getUserByUsername(req.user.username);
+
     return {
       message: 'Successfully Get Profile',
       data: user,
