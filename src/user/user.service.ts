@@ -35,11 +35,7 @@ export class UserService {
           username: username,
         },
       });
-      const profileUrl = await this.minioClient.getFileUrl(
-        this.configService.get('MINIO_BUCKET') as string,
-        user?.picture as string,
-      );
-      return { user, profileUrl };
+      return user;
     } catch (error) {
       throw new Error('Error Fetch User');
     }
@@ -55,11 +51,7 @@ export class UserService {
           email: email,
         },
       });
-      const profileUrl = await this.minioClient.getFileUrl(
-        this.configService.get('MINIO_BUCKET') as string,
-        user?.picture as string,
-      );
-      return { user, profileUrl };
+      return user;
     } catch (error) {
       throw new Error('Error Fetch User');
     }
