@@ -169,20 +169,27 @@ export class UserService {
     }
   }
 
-  async uploadAvatarProfile(file: Express.Multer.File, username: string) {
+  async uploadAvatarProfile(
+    file: Express.Multer.File,
+    username: string,
+    pictureUrl: string | null,
+  ) {
     try {
-      const uploadedImage = await this.minioClient.uploadImage(file);
+      const uploadedImage = await this.minioClient.uploadImage(
+        file,
+        pictureUrl,
+      );
       await this.prisma.users.update({
         where: {
           username: username,
         },
         data: {
-          picture: uploadedImage.objectName,
+          picture: uploadedImage.imageUrl,
         },
       });
       return uploadedImage.imageUrl;
     } catch (error) {
-      throw new Error('Error Upload Image');
+      throw new Error(error);
     }
   }
 

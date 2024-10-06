@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   HttpException,
-  HttpStatus,
   Param,
   Patch,
   Post,
@@ -16,6 +15,7 @@ import {
   FileTypeValidator,
   BadRequestException,
   Delete,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -167,9 +167,14 @@ export class UserController {
     if (!file) {
       throw new HttpException('No File Upload', HttpStatus.NO_CONTENT);
     }
+    const user = await this.userService.getUserByUsername(req.user.username);
+    if (!user) {
+      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+    }
     const uploadedImage = await this.userService.uploadAvatarProfile(
       file,
-      req.user.username,
+      user.username,
+      user.picture,
     );
     return {
       message: 'Upload Avatar Profile Successfully',
