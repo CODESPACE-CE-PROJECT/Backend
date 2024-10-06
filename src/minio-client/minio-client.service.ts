@@ -13,33 +13,39 @@ export class MinioClientService {
     this.logger = new Logger('MinioStorageService');
   }
 
-  async uploadImage(file: Express.Multer.File) {
-    if (!(file.mimetype.includes('jpeg') || file.mimetype.includes('png'))) {
-      throw new HttpException(
-        'Error Upload Image To MinIO',
-        HttpStatus.BAD_REQUEST,
+  async uploadImage(file: Express.Multer.File, pictureUrl: string | null) {
+    try {
+      if (!(file.mimetype.includes('jpeg') || file.mimetype.includes('png'))) {
+        throw new HttpException(
+          'Error Upload Image To MinIO',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      const minioBucket = this.configService.get('MINIO_BUCKET') as string;
+      const temp_file = Date.now().toString();
+      const hashFileName = crypto
+        .createHash('sha512')
+        .update(temp_file)
+        .digest('hex');
+      const ext = file.originalname.substring(
+        file.originalname.lastIndexOf('.'),
+        file.originalname.length,
       );
-    }
-    const minioBucket = this.configService.get('MINIO_BUCKET') as string;
-    const temp_file = Date.now().toString();
-    const hashFileName = crypto
-      .createHash('sha512')
-      .update(temp_file)
-      .digest('hex');
-    const ext = file.originalname.substring(
-      file.originalname.lastIndexOf('.'),
-      file.originalname.length,
-    );
 
-    const fileName = hashFileName + ext;
-    const fileBuffer = file.buffer;
-    await this.ensureBucket(minioBucket);
-    this.minio.client.putObject(minioBucket, fileName, fileBuffer);
-    const imageUrl = this.getFileUrl(minioBucket, fileName);
-    return {
-      imageUrl: imageUrl,
-      objectName: fileName,
-    };
+      const fileName = hashFileName + ext;
+      const fileBuffer = file.buffer;
+      await this.ensureBucket(minioBucket);
+      const splitData = pictureUrl?.split('/');
+      if (pictureUrl && splitData) {
+        await this.deleteFile(minioBucket, splitData[4]);
+      }
+      this.minio.client.putObject(minioBucket, fileName, fileBuffer);
+      return {
+        imageUrl: `https://${this.configService.get('MINIO_ENDPOINT')}/${this.configService.get('MINIO_BUCKET')}/${fileName}`,
+      };
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
   async getFileUrl(bucketName: string, objectName: string) {
@@ -51,5 +57,9 @@ export class MinioClientService {
     if (!exist) {
       await this.minio.client.makeBucket(bucketName);
     }
+  }
+
+  async deleteFile(bucketName: string, objectName: string) {
+    await this.minio.client.removeObject(bucketName, objectName);
   }
 }
