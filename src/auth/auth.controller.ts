@@ -27,16 +27,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(
-    @Request() req: IRequest,
-    @Body() loginDTO: LoginDTO,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async login(@Request() req: IRequest, @Body() loginDTO: LoginDTO) {
     const accessToken = await this.authService.login(req.user);
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-    });
-
     return { message: 'Successfully logged in', accessToken: accessToken };
   }
 
@@ -50,14 +42,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Google Login Callback (Student, Teacher, Admin)' })
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
-  async googleAuthRedirect(
-    @Request() req: any,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async googleAuthRedirect(@Request() req: any) {
     const accessToken = await this.authService.googleLogin(req.user);
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-    });
+
     return { message: 'Successfully logged in', accessToken: accessToken };
   }
 
