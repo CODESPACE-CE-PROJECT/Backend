@@ -11,7 +11,7 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CourseService } from './course.service';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
@@ -22,6 +22,7 @@ import { UpdateCourseDTO } from './dto/updateCourse.dto';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
 import { UserService } from 'src/user/user.service';
 
+@ApiBearerAuth()
 @ApiTags('Course')
 @Controller('course')
 export class CourseController {

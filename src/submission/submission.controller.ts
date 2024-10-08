@@ -10,7 +10,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { SubmissionService } from './submission.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { Role } from '@prisma/client';
@@ -22,6 +22,7 @@ import { CourseService } from 'src/course/course.service';
 import { CourseStudentService } from 'src/course-student/course-student.service';
 import { CourseTeacherService } from 'src/course-teacher/course-teacher.service';
 
+@ApiBearerAuth()
 @ApiTags('Submission')
 @Controller('submission')
 export class SubmissionController {

@@ -12,7 +12,7 @@ import {
   Delete,
 } from '@nestjs/common';
 import { AssignmentService } from './assignment.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { CourseStudentService } from 'src/course-student/course-student.service';
@@ -25,6 +25,7 @@ import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
 import { AddDateAssignmentDTO } from './dto/addDateAssignment.dto';
 import { UpdateLockAssignmentDTO } from './dto/updateLOckAssignment.dto';
 
+@ApiBearerAuth()
 @ApiTags('Assignment')
 @Controller('assignment')
 export class AssignmentController {
