@@ -26,6 +26,7 @@ services:
       ADMIN_PASS: ${ADMIN_PASS}
       ASSIGNMENT_LIMIT: 10
       DOMAIN_URL: ${DOMAIN_URL}
+      FRONTEND_REDIRECT_URL: ${FRONTEND_REDIRECT_URL}
     labels:
       traefik.enable: 'true'
       traefik.http.services.codespace-api.loadbalancer.server.port: '3000'
