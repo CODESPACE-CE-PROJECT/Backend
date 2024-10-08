@@ -48,12 +48,14 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
   async googleAuthRedirect(@Request() req: any, @Res() res: Response) {
-    const accessToken = await this.authService.googleLogin(req.user);
+    const { accessToken, roleUser } = await this.authService.googleLogin(
+      req.user,
+    );
     if (accessToken) {
       const role =
-        req.user.role === Role.ADMIN
+        roleUser === Role.ADMIN
           ? 'admin'
-          : req.user.role === Role.TEACHER
+          : roleUser === Role.TEACHER
             ? 'teacher'
             : 'student';
       res.redirect(

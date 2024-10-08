@@ -53,7 +53,7 @@ export class AuthService {
       role: user.role,
       schoolId: user.schoolId,
     };
-    return this.jwtService.sign(payload);
+    return { accessToken: this.jwtService.sign(payload), roleUser: user.role };
   }
 
   async logout(username: string) {
