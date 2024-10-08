@@ -7,6 +7,7 @@ import {
   Body,
   HttpException,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import { IRequest } from './interface/request.interface';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { IResponseGoogle } from './interface/response-google.inteface.ts';
 import { AuthGuard } from '@nestjs/passport';
+import { Response } from 'express';
 
 @ApiTags('Authenication')
 @Controller('auth')
@@ -25,8 +27,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: IRequest, @Body() loginDTO: LoginDTO) {
+  async login(
+    @Request() req: IRequest,
+    @Body() loginDTO: LoginDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const accessToken = await this.authService.login(req.user);
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+    });
+
     return { message: 'Successfully logged in', accessToken: accessToken };
   }
 
@@ -40,8 +50,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Google Login Callback (Student, Teacher, Admin)' })
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
-  async googleAuthRedirect(@Request() req: any) {
+  async googleAuthRedirect(
+    @Request() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const accessToken = await this.authService.googleLogin(req.user);
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+    });
     return { message: 'Successfully logged in', accessToken: accessToken };
   }
 
