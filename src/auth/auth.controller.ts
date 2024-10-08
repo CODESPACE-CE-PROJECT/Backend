@@ -18,11 +18,16 @@ import { GoogleAuthGuard } from './google-auth.guard';
 import { IResponseGoogle } from './interface/response-google.inteface.ts';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { Role } from '@prisma/client';
 
 @ApiTags('Authenication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
   @UseGuards(LocalAuthGuard)
@@ -42,10 +47,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Google Login Callback (Student, Teacher, Admin)' })
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
-  async googleAuthRedirect(@Request() req: any) {
+  async googleAuthRedirect(@Request() req: any, @Res() res: Response) {
     const accessToken = await this.authService.googleLogin(req.user);
-
-    return { message: 'Successfully logged in', accessToken: accessToken };
+    if (accessToken) {
+      const role =
+        req.user.role === Role.ADMIN
+          ? 'admin'
+          : req.user.role === Role.TEACHER
+            ? 'teacher'
+            : 'student';
+      res.redirect(
+        `${this.configService.get('FRONTEND_REDIRECT_URL')}/${role}/courses`,
+      );
+    }
   }
 
   @ApiBearerAuth()

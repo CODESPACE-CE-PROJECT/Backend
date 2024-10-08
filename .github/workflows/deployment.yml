@@ -40,6 +40,7 @@ jobs:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
           DOMAIN_URL: ${{ secrets.DOMAIN_URL }}
+          FRONTEND_REDIRECT_URL: ${{ secrets.FRONTEND_REDIRECT_URL }}
         run: |
           echo "DATABASE_URL=$DATABASE_URL" >> .env
           echo "JWT_SECRET=$JWT_SECRET" >> .env
@@ -52,6 +53,7 @@ jobs:
           echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
           echo "ADMIN_PASS=$ADMIN_PASS" >> .env
           echo "DOMAIN_URL=$DOMAIN_URL" >> .env
+          echo "FRONTEND_REDIRECT_URL" >> .env
 
       - name: Clear Cache 🫧
         run: |
@@ -71,4 +73,3 @@ jobs:
           method: 'POST'
           customHeaders: '{"Content-Type": "application/json"}'
           data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://codespace-api.srv-demo-2.home.unixvextor.com"}]}'
-
