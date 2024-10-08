@@ -53,7 +53,7 @@ jobs:
           echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
           echo "ADMIN_PASS=$ADMIN_PASS" >> .env
           echo "DOMAIN_URL=$DOMAIN_URL" >> .env
-          echo "FRONTEND_REDIRECT_URL" >> .env
+          echo "FRONTEND_REDIRECT_URL=$FRONTEND_REDIRECT_URL" >> .env
 
       - name: Clear Cache 🫧
         run: |
