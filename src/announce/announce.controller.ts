@@ -12,7 +12,7 @@ import {
   Delete,
 } from '@nestjs/common';
 import { AnnounceService } from './announce.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { CreateAnnounceDTO } from './dto/createAnnounce.dto';
@@ -24,6 +24,7 @@ import { ReplyService } from 'src/reply/reply.service';
 import { CreateReplyDTO } from 'src/reply/dto/createReply.dto';
 import { UpdateReplyDTO } from 'src/reply/dto/updateReply.dto';
 
+@ApiBearerAuth()
 @ApiTags('Announce')
 @Controller('announce')
 export class AnnounceController {

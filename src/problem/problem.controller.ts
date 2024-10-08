@@ -12,7 +12,12 @@ import {
   Delete,
 } from '@nestjs/common';
 import { ProblemService } from './problem.service';
-import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { AssignmentService } from 'src/assignment/assignment.service';
@@ -29,6 +34,7 @@ import { ConstraintService } from 'src/constraint/constraint.service';
 import { CreateConstraintDTO } from 'src/constraint/dto/createConstraint.dto';
 import { UpdateConstraintDTO } from 'src/constraint/dto/updateConstraint.dto';
 
+@ApiBearerAuth()
 @ApiTags('Problem')
 @Controller('problem')
 export class ProblemController {

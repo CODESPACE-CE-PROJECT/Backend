@@ -12,12 +12,13 @@ import {
   Delete,
 } from '@nestjs/common';
 import { CodeSpaceService } from './code-space.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { CreateCodeSpaceDTO } from './dto/createCodeSpace.dto';
 import { UpdateCodeSpaceDTO } from './dto/updateCodeSpace.dto';
 
+@ApiBearerAuth()
 @ApiTags('Code Space')
 @Controller('code-space')
 export class CodeSpaceController {

@@ -18,7 +18,13 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RegisterDTO } from './dto/register.dto';
 import { Role, Users } from '@prisma/client';
 import { SchoolService } from 'src/school/school.service';
@@ -28,6 +34,7 @@ import { IRequest } from 'src/auth/interface/request.interface';
 import { Request as RequestExpress, Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadDTO } from './dto/fileUpload.dto';
+@ApiBearerAuth()
 @ApiTags('User')
 @Controller('user')
 export class UserController {

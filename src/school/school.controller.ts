@@ -13,7 +13,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { SchoolService } from './school.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateSchoolDTO } from './dto/createSchool.dto';
 import { UpdateSchoolDTO } from './dto/updateSchool.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -23,6 +23,7 @@ import { CreatePermissionSchoolDTO } from 'src/permission/dto/createPermissionSc
 import { UpdatePermissionSchoolDTO } from 'src/permission/dto/upatePermissionSchool.dto';
 import { PermissionService } from 'src/permission/permission.service';
 
+@ApiBearerAuth()
 @ApiTags('School')
 @Controller('school')
 export class SchoolController {
