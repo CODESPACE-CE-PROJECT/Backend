@@ -34,6 +34,9 @@ export class UserService {
         where: {
           username: username,
         },
+        include: {
+          school: true,
+        },
       });
       return user;
     } catch (error) {
@@ -49,6 +52,9 @@ export class UserService {
         },
         where: {
           email: email,
+        },
+        include: {
+          school: true,
         },
       });
       return user;
