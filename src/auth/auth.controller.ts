@@ -47,10 +47,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Google Login Callback (Student, Teacher, Admin)' })
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
-  async googleAuthRedirect(@Request() req: any, @Res() res: Response) {
+  async googleAuthRedirect(
+    @Request() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { accessToken, roleUser } = await this.authService.googleLogin(
       req.user,
     );
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+    });
     if (accessToken) {
       const role =
         roleUser === Role.ADMIN
