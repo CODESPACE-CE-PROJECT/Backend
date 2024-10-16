@@ -155,7 +155,7 @@ export class SubmissionController {
   @ApiOperation({ summary: 'Create Submission (Student, Teacher)' })
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  async getAllUser(
+  async createSubmission(
     @Request() req: IRequest,
     @Body() submissionDTO: SubmissionDTO,
   ) {
@@ -181,7 +181,7 @@ export class SubmissionController {
     }
 
     const course = await this.courseService.getCourseById(assignment.courseId);
-    if (!assignment) {
+    if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
     const courseTeacher =
@@ -194,7 +194,7 @@ export class SubmissionController {
         req.user.username,
         course?.courseId as string,
       );
-    if (!courseTeacher || !courseStudent) {
+    if (!courseTeacher && !courseStudent) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
