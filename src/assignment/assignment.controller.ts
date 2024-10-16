@@ -19,7 +19,7 @@ import { CourseStudentService } from 'src/course-student/course-student.service'
 import { CourseTeacherService } from 'src/course-teacher/course-teacher.service';
 import { CourseService } from 'src/course/course.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
-import { Role } from '@prisma/client';
+import { Problem, Role } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
 import { AddDateAssignmentDTO } from './dto/addDateAssignment.dto';
@@ -46,6 +46,12 @@ export class AssignmentController {
     @Request() req: IRequest,
     @Param('courseId') courseId: string,
   ) {
+    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
+      throw new HttpException(
+        'Do Not Have Permission(Teacher)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const course = await this.courseService.getCourseById(courseId);
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
@@ -64,11 +70,43 @@ export class AssignmentController {
     if (!courseStudent && !courseTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
-    const assignment =
+    const assignments =
       await this.assignmentService.getAssigmentByCourseId(courseId);
+
+    const problemIds = assignments.flatMap((assignment) =>
+      assignment.problem.map((problem) => problem.problemId),
+    );
+    const submissions =
+      await this.assignmentService.getManySubmissonByUsernameAndProblemId(
+        req.user.username,
+        problemIds,
+      );
+
+    const submissionMap = submissions.reduce(
+      (acc, submission) => {
+        acc[submission.problemId] = submission.status;
+        return acc;
+      },
+      {} as Record<string, boolean | null>,
+    );
+
+    const updatedAssignments = assignments.map((assignment) => {
+      const updatedProblems = assignment.problem.map((problem) => {
+        return {
+          problemId: problem.problemId,
+          score: problem.score,
+          status: submissionMap[problem.problemId] || false,
+        };
+      });
+      delete (assignment as { problem?: Problem[] }).problem;
+      return {
+        ...assignment,
+        problem: updatedProblems,
+      };
+    });
     return {
       message: 'Successfully Get Assignment',
-      data: assignment,
+      data: updatedAssignments,
     };
   }
 

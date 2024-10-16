@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SubmissionDTO } from './dto/submission.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SubmissionService {
@@ -35,7 +36,7 @@ export class SubmissionService {
     try {
       const submission = await this.prisma.submission.findMany({
         where: {
-          userId: username,
+          username: username,
           problemId: problemId,
         },
       });
@@ -52,7 +53,7 @@ export class SubmissionService {
     try {
       const count = await this.prisma.submission.count({
         where: {
-          userId: username,
+          username: username,
           problemId: problemId,
         },
       });
@@ -62,17 +63,18 @@ export class SubmissionService {
     }
   }
 
-  async creteSubmissionByUsernameAndProblemId(
+  async createSubmissionByUsernameAndProblemId(
     submissionDTO: SubmissionDTO,
     no: number,
+    username: string,
   ) {
     try {
       const submission = await this.prisma.submission.create({
         data: {
           problemId: submissionDTO.problemId,
-          userId: submissionDTO.username,
+          username: username,
           sourceCode: submissionDTO.sourceCode,
-          result: submissionDTO.result,
+          result: submissionDTO.results as Prisma.JsonArray,
           no: no,
           status: submissionDTO.status,
         },

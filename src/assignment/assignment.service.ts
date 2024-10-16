@@ -23,11 +23,31 @@ export class AssignmentService {
     }
   }
 
+  async getManySubmissonByUsernameAndProblemId(
+    username: string,
+    problemIds: string[],
+  ) {
+    try {
+      const submission = await this.prisma.submission.findMany({
+        where: {
+          problemId: { in: problemIds },
+          username: username,
+        },
+      });
+      return submission;
+    } catch (error) {
+      throw new Error('Error Fetch Submission');
+    }
+  }
+
   async getAssigmentByCourseId(courseId: string) {
     try {
       const assignment = await this.prisma.assignment.findMany({
         where: {
           courseId: courseId,
+        },
+        include: {
+          problem: true,
         },
       });
       return assignment;
