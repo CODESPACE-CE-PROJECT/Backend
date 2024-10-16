@@ -54,18 +54,23 @@ export class SubmissionController {
   }
 
   @ApiOperation({
-    summary:
-      'Get Submission By Id With Username Your Self (Teacehr, Student, Admin)',
+    summary: 'Get Submission By Id With Username Your Self (Teacher, Student)',
   })
   @UseGuards(AuthGuard('jwt'))
   @Get(':id')
   async getSubmissionById(@Request() req: IRequest, @Param('id') id: string) {
+    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
+      throw new HttpException(
+        'Do Not Have Permission(Teacher, student)',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const invalidSubmission =
       await this.submissionService.getSubmissionById(id);
     if (!invalidSubmission) {
       throw new HttpException('Submission Not Found', HttpStatus.NOT_FOUND);
     }
-    if (invalidSubmission.userId !== req.user.username) {
+    if (invalidSubmission.username !== req.user.username) {
       throw new HttpException(
         'This Submission Not Your',
         HttpStatus.BAD_REQUEST,
@@ -147,30 +152,63 @@ export class SubmissionController {
     };
   }
 
-  @ApiOperation({ summary: 'Create Submission (Admin)' })
+  @ApiOperation({ summary: 'Create Submission (Student, Teacher)' })
   @UseGuards(AuthGuard('jwt'))
   @Post()
   async getAllUser(
     @Request() req: IRequest,
     @Body() submissionDTO: SubmissionDTO,
   ) {
-    if (req.user.role !== Role.ADMIN) {
+    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
       throw new HttpException(
-        'Do Not Have Permission(Admin)',
+        'Do Not Have Permission(Techer, Student)',
         HttpStatus.FORBIDDEN,
       );
     }
 
+    const problem = await this.problemService.getProblemById(
+      submissionDTO.problemId,
+    );
+    if (!problem) {
+      throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
+    }
+    const assignment = await this.assignmentService.getAssigmentById(
+      problem.assignmentId,
+    );
+
+    if (!assignment) {
+      throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const course = await this.courseService.getCourseById(assignment.courseId);
+    if (!assignment) {
+      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
+    }
+    const courseTeacher =
+      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
+        req.user.username,
+        course?.courseId as string,
+      );
+    const courseStudent =
+      await this.courseStudentService.getCourseStudentByUsernameAndCourseId(
+        req.user.username,
+        course?.courseId as string,
+      );
+    if (!courseTeacher || !courseStudent) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
     const noSubmission =
       (await this.submissionService.countSubmissionByUsernameAndProblemId(
-        submissionDTO.username,
+        req.user.username,
         submissionDTO.problemId,
-      )) || 0;
+      )) || 1;
 
     const submission =
-      await this.submissionService.creteSubmissionByUsernameAndProblemId(
+      await this.submissionService.createSubmissionByUsernameAndProblemId(
         submissionDTO,
         noSubmission,
+        req.user.username,
       );
     return {
       message: 'Successfully Create Submission',
