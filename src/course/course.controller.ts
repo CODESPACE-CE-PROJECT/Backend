@@ -10,6 +10,12 @@ import {
   Param,
   Patch,
   Delete,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CourseService } from './course.service';
@@ -21,6 +27,7 @@ import { PermissionService } from 'src/permission/permission.service';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
 import { UserService } from 'src/user/user.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiBearerAuth()
 @ApiTags('Course')
@@ -171,10 +178,22 @@ export class CourseController {
 
   @ApiOperation({ summary: 'createCourse (Teacher)' })
   @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('background'))
   @Post()
   async createCourse(
     @Body() createCourseDTO: CreateCourseDTO,
     @Request() req: IRequest,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // Validate file size (10MB max)
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
+        ],
+        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
+      }),
+    )
+    background: Express.Multer.File,
   ) {
     if (req.user.role !== Role.TEACHER) {
       throw new HttpException(
@@ -211,6 +230,7 @@ export class CourseController {
       createCourseDTO,
       req.user.username,
       req.user.schoolId,
+      background,
     );
     return {
       message: 'Successfully Create Course',

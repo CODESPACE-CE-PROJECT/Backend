@@ -6,6 +6,7 @@ import { CourseTeacherService } from 'src/course-teacher/course-teacher.service'
 import { CourseStudentService } from 'src/course-student/course-student.service';
 import { Course, Role } from '@prisma/client';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
+import { MinioClientService } from 'src/minio-client/minio-client.service';
 
 @Injectable()
 export class CourseService {
@@ -13,6 +14,7 @@ export class CourseService {
     private readonly prisma: PrismaService,
     private readonly courseTeacherService: CourseTeacherService,
     private readonly courseStudentService: CourseStudentService,
+    private readonly minio: MinioClientService,
   ) {}
 
   async getAllCourse() {
@@ -111,14 +113,17 @@ export class CourseService {
     createCourseDTO: CreateCourseDTO,
     username: string,
     schoolId: string,
+    backgroundImage: Express.Multer.File,
   ) {
     try {
+      const backgroundUrl = await this.minio.uploadImage(backgroundImage, '');
       const course = await this.prisma.course.create({
         data: {
           title: createCourseDTO.title,
           description: createCourseDTO.description,
           username: username,
           schoolId: schoolId,
+          backgroundUrl: backgroundUrl.imageUrl,
         },
       });
       await this.prisma.courseTeacher.create({

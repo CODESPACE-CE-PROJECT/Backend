@@ -6,6 +6,7 @@ import { PermissionModule } from 'src/permission/permission.module';
 import { CourseTeacherModule } from 'src/course-teacher/course-teacher.module';
 import { CourseStudentModule } from 'src/course-student/course-student.module';
 import { UserModule } from 'src/user/user.module';
+import { MinioClientModule } from 'src/minio-client/minio-client.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { UserModule } from 'src/user/user.module';
     CourseTeacherModule,
     CourseStudentModule,
     UserModule,
+    MinioClientModule,
   ],
   providers: [CourseService],
   controllers: [CourseController],

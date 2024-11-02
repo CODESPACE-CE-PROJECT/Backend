@@ -19,7 +19,6 @@ import { IResponseGoogle } from './interface/response-google.inteface.ts';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
 
 @ApiTags('Authenication')
 @Controller('auth')
@@ -32,7 +31,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: IRequest, @Body() loginDTO: LoginDTO) {
+  async login(@Request() req: IRequest, @Body() _loginDTO: LoginDTO) {
     const accessToken = await this.authService.login(req.user);
     return { message: 'Successfully logged in', accessToken: accessToken };
   }
@@ -40,7 +39,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Google Login (Student, Teacher, Admin)' })
   @UseGuards(GoogleAuthGuard)
   @Get('google')
-  async googlAuth(@Request() req: IResponseGoogle) {
+  async googlAuth(@Request() _req: IResponseGoogle) {
     // Initiates the Google Oauth process
   }
 
@@ -51,23 +50,14 @@ export class AuthController {
     @Request() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, roleUser } = await this.authService.googleLogin(
-      req.user,
-    );
+    const { accessToken } = await this.authService.googleLogin(req.user);
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      domain: 'localhost',
     });
-    if (accessToken) {
-      const role =
-        roleUser === Role.ADMIN
-          ? 'admin'
-          : roleUser === Role.TEACHER
-            ? 'teacher'
-            : 'student';
-      res.redirect(
-        `${this.configService.get('FRONTEND_REDIRECT_URL')}/${role}/courses`,
-      );
-    }
+    res.redirect(`${this.configService.get('FRONTEND_REDIRECT_URL')}/`);
   }
 
   @ApiBearerAuth()
