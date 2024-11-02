@@ -24,6 +24,13 @@ export class CourseStudentService {
         where: {
           courseId: courseId,
         },
+        include: {
+          user: true,
+        },
+        omit: {
+          courseId: true,
+          courseStudentId: true,
+        },
       });
       return students;
     } catch (error) {
