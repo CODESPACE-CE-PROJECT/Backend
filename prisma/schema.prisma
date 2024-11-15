@@ -9,11 +9,19 @@ datasource db {
 }
 
 model School {
-  schoolId   String      @id @default(uuid())
-  schoolName String
-  courses    Course[]
-  permission Permission?
-  users      Users[]
+  schoolId    String      @id @default(uuid())
+  schoolName  String
+  pictureUrl  String?
+  package     PackageType
+  isEnable    Boolean     @default(true)
+  address     String
+  subDistrict String
+  district    String
+  province    String
+  postCode    String
+  courses     Course[]
+  permission  Permission?
+  users       Users[]
 }
 
 model Permission {
@@ -37,10 +45,11 @@ model Users {
   lastName       String
   gender         Gender
   role           Role             @default(STUDENT)
-  picture        String?
-  containerID    String?
+  pictureUrl     String?
   IpAddress      String?
   isActived      Boolean          @default(false)
+  allowLogin     Boolean          @default(true)
+  isEnable       Boolean          @default(true)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   schoolId       String
@@ -52,6 +61,7 @@ model Users {
   replyAnnounce  ReplyAnnounce[]
   submission     Submission[]
   school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  notification   Notification[]
 }
 
 model CodeSpace {
@@ -67,29 +77,29 @@ model Course {
   courseId       String           @id @default(uuid())
   title          String
   description    String?
+  backgroundUrl  String?
   username       String
+  user           Users            @relation(fields: [username], references: [username], onDelete: Cascade)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   schoolId       String
-  backgroundUrl  String?
   assignment     Assignment[]
   school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
-  user           Users            @relation(fields: [username], references: [username], onDelete: Cascade)
   courseAnnounce CourseAnnounce[]
   courseStudent  CourseStudent[]
   courseTeacher  CourseTeacher[]
+  Notification   Notification[]
 }
 
 model CourseAnnounce {
   courseAnnounceId String          @id @default(uuid())
-  title            String
-  description      String
   username         String
+  user             Users           @relation(fields: [username], references: [username], onDelete: Cascade)
+  description      String
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   courseId         String
   course           Course          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  user             Users           @relation(fields: [username], references: [username], onDelete: Cascade)
   replyAnnounce    ReplyAnnounce[]
 }
 
@@ -97,11 +107,11 @@ model ReplyAnnounce {
   replyAnnounceId  String         @id @default(uuid())
   message          String
   username         String
-  courseAnnounceId String
+  user             Users          @relation(fields: [username], references: [username], onDelete: Cascade)
   createAt         DateTime       @default(now())
   updateAt         DateTime       @updatedAt
+  courseAnnounceId String
   courseAnnounce   CourseAnnounce @relation(fields: [courseAnnounceId], references: [courseAnnounceId], onDelete: Cascade)
-  user             Users          @relation(fields: [username], references: [username], onDelete: Cascade)
 }
 
 model CourseStudent {
@@ -121,20 +131,19 @@ model CourseTeacher {
 }
 
 model Assignment {
-  assignmentId      String         @id @default(uuid())
-  title             String
-  description       String
-  isLock            Boolean
-  language          LanguageType   @default(PYTHON)
-  problemQuantities Int            @default(1)
-  type              AssignmentType
-  startAt           DateTime?
-  expireAt          DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  courseId          String
-  course            Course         @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  problem           Problem[]
+  assignmentId String                 @id @default(uuid())
+  title        String
+  type         AssignmentType
+  isLock       Boolean
+  startAt      DateTime
+  expireAt     DateTime
+  announceType AnnounceAssignmentType @default(UNSET)
+  announceDate DateTime               @default(now())
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  courseId     String
+  course       Course                 @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  problem      Problem[]
 }
 
 model Problem {
@@ -142,6 +151,7 @@ model Problem {
   title        String
   description  String
   hint         String?
+  language     LanguageType @default(PYTHON)
   revaleCode   String?
   score        Int
   isRegex      Boolean      @default(false)
@@ -164,16 +174,16 @@ model TestCase {
 }
 
 model Submission {
-  submissionId String   @id @default(uuid())
-  sourceCode   String
-  status       Boolean
-  createdAt    DateTime @default(now())
-  username     String
-  problemId    String
-  no           Int
-  result       Json?    @db.Json
-  problem      Problem  @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
-  user         Users    @relation(fields: [username], references: [username], onDelete: Cascade, map: "Submission_userId_fkey")
+  submissionId    String          @id @default(uuid())
+  problemId       String
+  problem         Problem         @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  username        String
+  user            Users           @relation(fields: [username], references: [username], onDelete: Cascade)
+  sourceCode      String
+  no              Int
+  result          Json?           @db.Json
+  stateSubmission StateSubmission
+  createdAt       DateTime        @default(now())
 }
 
 model Constraint {
@@ -185,9 +195,21 @@ model Constraint {
   problem      Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
 }
 
+model Notification {
+  notificationId String           @id @default(uuid())
+  username       String
+  user           Users            @relation(fields: [username], references: [username], onDelete: Cascade)
+  courseId       String
+  course         Course           @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  type           NotificationType
+  detail         Json?            @db.Json
+  isClose        Boolean          @default(false)
+}
+
 enum Gender {
   MALE
   FEMALE
+  OTHER
 }
 
 enum Role {
@@ -198,8 +220,8 @@ enum Role {
 
 enum AssignmentType {
   EXERCISE
-  QUIZ
-  EXAM
+  EXAMONLINE
+  EXAMONSITE
 }
 
 enum LanguageType {
@@ -207,4 +229,25 @@ enum LanguageType {
   C
   CPP
   JAVA
+}
+
+enum AnnounceAssignmentType {
+  UNSET
+  SET
+  ANNOUNCED
+}
+
+enum PackageType {
+  STANDARD
+  PREMIUM
+}
+
+enum StateSubmission {
+  PASS
+  FAILED
+}
+
+enum NotificationType {
+  ACTION
+  ANNOUNCE
 }
