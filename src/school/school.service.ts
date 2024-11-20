@@ -9,12 +9,13 @@ export class SchoolService {
 
   async createSchool(createSchoolDTO: CreateSchoolDTO) {
     try {
-      const school = await this.prisma.school.create({
-        data: {
-          schoolName: createSchoolDTO.schoolName,
-        },
-      });
-      return school;
+      //const school = await this.prisma.school.create({
+      //  data: {
+      //    schoolName: createSchoolDTO.schoolName,
+      //
+      //  },
+      //});
+      //return school;
     } catch (error) {
       throw new Error('Error Create School');
     }

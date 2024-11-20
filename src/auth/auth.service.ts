@@ -1,16 +1,19 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDTO } from './dto/login.dto';
 import { Users } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { IResponseGoogle } from './interface/response-google.inteface.ts';
+import { ConfigService } from '@nestjs/config';
+import { IPayload } from './interface/payload.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async validateUser(loginDTO: LoginDTO) {
@@ -26,13 +29,30 @@ export class AuthService {
     return null;
   }
 
+  generateAccessToken(payload: IPayload) {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.getOrThrow('JWT_SECRET'),
+      expiresIn: '15m',
+    });
+  }
+
+  generateRefreshToken(payload: IPayload) {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
+      expiresIn: '14d',
+    });
+  }
+
   async login(user: Users) {
     const payload = {
       username: user.username,
       role: user.role,
       schoolId: user.schoolId,
     };
-    return this.jwtService.sign(payload);
+    return {
+      accessToken: this.generateAccessToken(payload),
+      refreshToken: this.generateRefreshToken(payload),
+    };
   }
 
   async googleLogin(responseGoogle: IResponseGoogle) {
@@ -43,17 +63,20 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(
       responseGoogle.profile._json.email,
     );
-    await this.userService.updateStatusByUsername(user?.username || '', true);
     if (!user) {
-      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+      return { error: 'User Not Found' };
     }
-
+    await this.userService.updateStatusByUsername(user?.username || '', true);
     const payload = {
       username: user.username,
       role: user.role,
       schoolId: user.schoolId,
     };
-    return { accessToken: this.jwtService.sign(payload), roleUser: user.role };
+    return {
+      accessToken: this.generateAccessToken(payload),
+      refreshToken: this.generateRefreshToken(payload),
+      error: '',
+    };
   }
 
   async logout(username: string) {

@@ -14,11 +14,11 @@ model School {
   pictureUrl  String?
   package     PackageType
   isEnable    Boolean     @default(true)
-  address     String
-  subDistrict String
-  district    String
-  province    String
-  postCode    String
+  address     String?
+  subDistrict String?
+  district    String?
+  province    String?
+  postCode    String?
   courses     Course[]
   permission  Permission?
   users       Users[]

@@ -76,7 +76,7 @@ export class SubmissionService {
           sourceCode: submissionDTO.sourceCode,
           result: submissionDTO.results as Prisma.JsonArray,
           no: no,
-          status: submissionDTO.status,
+          stateSubmission: 'PASS',
         },
       });
       return submission;

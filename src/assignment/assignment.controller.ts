@@ -84,7 +84,7 @@ export class AssignmentController {
 
     const submissionMap = submissions.reduce(
       (acc, submission) => {
-        acc[submission.problemId] = submission.status;
+        //acc[submission.problemId] = submission.stateSubmission;
         return acc;
       },
       {} as Record<string, boolean | null>,

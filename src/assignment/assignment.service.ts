@@ -61,15 +61,14 @@ export class AssignmentService {
       const assignment = await this.prisma.assignment.create({
         data: {
           title: createAssignmentDTO.title,
-          description: createAssignmentDTO.description,
           type:
             createAssignmentDTO.type === 'Exercise'
               ? AssignmentType.EXERCISE
-              : AssignmentType.EXAM,
+              : AssignmentType.EXAMONLINE,
           courseId: createAssignmentDTO.courseId,
           isLock: false,
-          language: createAssignmentDTO.language,
-          problemQuantities: createAssignmentDTO.problemQuantities,
+          startAt: new Date(),
+          expireAt: new Date(),
         },
       });
       return assignment;
@@ -122,13 +121,10 @@ export class AssignmentService {
         },
         data: {
           title: updateAssignmentDTO.title,
-          description: updateAssignmentDTO.description,
           type:
             updateAssignmentDTO.type === 'Exercise'
               ? AssignmentType.EXERCISE
-              : AssignmentType.EXAM,
-          language: updateAssignmentDTO.language,
-          problemQuantities: updateAssignmentDTO.problemQuantities,
+              : AssignmentType.EXAMONLINE,
         },
       });
       return assignment;

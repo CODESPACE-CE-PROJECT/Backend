@@ -41,7 +41,6 @@ export class AnnounceService {
       const announce = await this.prisma.courseAnnounce.create({
         data: {
           courseId: createAnnounceDTO.courseId,
-          title: createAnnounceDTO.title,
           description: createAnnounceDTO.description,
           username: username,
         },
@@ -59,7 +58,6 @@ export class AnnounceService {
           courseAnnounceId: id,
         },
         data: {
-          title: updateAnnounceDTO.title,
           description: updateAnnounceDTO.description,
         },
       });

@@ -4,7 +4,6 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SchoolModule } from './school/school.module';
 import { MinioClientModule } from './minio-client/minio-client.module';
-import { InitModule } from './init/init.module';
 import { PermissionModule } from './permission/permission.module';
 import { CourseModule } from './course/course.module';
 import { CourseStudentModule } from './course-student/course-student.module';
@@ -23,21 +22,20 @@ import { AppController } from './app.controller';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    UserModule,
+    //UserModule,
     AuthModule,
     SchoolModule,
     MinioClientModule,
-    InitModule,
-    PermissionModule,
-    CourseModule,
-    CourseStudentModule,
-    CourseTeacherModule,
-    AnnounceModule,
-    ReplyModule,
-    AssignmentModule,
-    ProblemModule,
-    SubmissionModule,
-    CodeSpaceModule,
+    //PermissionModule,
+    //CourseModule,
+    //CourseStudentModule,
+    //CourseTeacherModule,
+    //AnnounceModule,
+    //ReplyModule,
+    //AssignmentModule,
+    //ProblemModule,
+    //SubmissionModule,
+    //CodeSpaceModule,
   ],
   controllers: [AppController],
 })

@@ -5,14 +5,12 @@ import { Role, Gender, Users } from '@prisma/client';
 import { UpdateUserDTO } from './dto/upadteUser.dto';
 import * as bcrypt from 'bcrypt';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
     private readonly minioClient: MinioClientService,
-    private readonly configService: ConfigService,
   ) {}
 
   async getAllUser() {
@@ -190,7 +188,7 @@ export class UserService {
           username: username,
         },
         data: {
-          picture: uploadedImage.imageUrl,
+          pictureUrl: uploadedImage.imageUrl,
         },
       });
       return uploadedImage.imageUrl;

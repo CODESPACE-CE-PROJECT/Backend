@@ -34,6 +34,7 @@ import { IRequest } from 'src/auth/interface/request.interface';
 import { Request as RequestExpress, Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadDTO } from './dto/fileUpload.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @ApiBearerAuth()
 @ApiTags('User')
 @Controller('user')
@@ -123,7 +124,7 @@ export class UserController {
   }
 
   @ApiOperation({ summary: 'Get Profile (Student, Teacher, Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req: IRequest) {
     const user = await this.userService.getUserByUsername(req.user.username);
@@ -181,7 +182,7 @@ export class UserController {
     const uploadedImage = await this.userService.uploadAvatarProfile(
       file,
       user.username,
-      user.picture,
+      user.pictureUrl,
     );
     return {
       message: 'Upload Avatar Profile Successfully',
