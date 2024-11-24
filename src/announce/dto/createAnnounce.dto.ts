@@ -2,11 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAnnounceDTO {
   @ApiProperty()
-  title: string;
+  courseId: string;
 
   @ApiProperty()
   description: string;
-
-  @ApiProperty()
-  courseId: string;
 }

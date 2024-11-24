@@ -31,6 +31,9 @@ export class CourseService {
         where: {
           courseId: courseId,
         },
+        include: {
+          courseTeacher: true,
+        },
       });
       return course;
     } catch (error) {

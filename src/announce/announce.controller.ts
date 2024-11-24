@@ -21,288 +21,254 @@ import { UpdateAnnounceDTO } from './dto/updateAnnounce.dto';
 import { ReplyService } from 'src/reply/reply.service';
 import { CreateReplyDTO } from 'src/reply/dto/createReply.dto';
 import { UpdateReplyDTO } from 'src/reply/dto/updateReply.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UtilsService } from 'src/utils/utils.service';
+import { CourseService } from 'src/course/course.service';
+import { join } from 'path';
 
 @ApiBearerAuth()
-@ApiTags('Announce')
+@ApiTags('Announcement')
 @Controller('announce')
 export class AnnounceController {
   constructor(
     private readonly announceService: AnnounceService,
+    private readonly utilsService: UtilsService,
     private readonly replyService: ReplyService,
+    private readonly courseService: CourseService,
   ) {}
 
   @ApiOperation({
     summary: 'Get Announce By Course Id (Admin, Teacher, Student)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Get(':courseId')
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
   async getAnnounceByCourseId(
     @Request() req: IRequest,
-    @Param('courseId') courseId: string,
+    @Param('id') id: string,
   ) {
-    //const courseStudent =
-    //  await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-    //    req.user.username,
-    //    courseId,
-    //  );
-    //const courseTeacher =
-    //  await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //    req.user.username,
-    //    courseId,
-    //  );
-    //if (!courseStudent && !courseTeacher) {
-    //  throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //}
-    //
-    //const announce = await this.announceService.getAnnouceByCourseId(courseId);
-    //if (announce.length === 0) {
-    //  throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
-    //}
-    //return {
-    //  message: 'Successfully Get Announce',
-    //  data: announce,
-    //};
+    const announce = await this.announceService.getAnnouceById(id);
+
+    if (!announce) {
+      throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const validTeacher = announce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    const validStudent = announce?.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!validTeacher && !validStudent) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+    if (announce) {
+      Reflect.deleteProperty(announce, 'course');
+    }
+
+    return {
+      message: 'Successfully Get Announce',
+      data: announce,
+    };
   }
 
-  //@ApiOperation({
-  //  summary: 'Create Announce By Course Id (Teacher)',
-  //})
-  //@UseGuards(AuthGuard('jwt'))
-  //@Post()
-  //async createAnnounceByCourseId(
-  //  @Request() req: IRequest,
-  //  @Body() createAnnnounceDTO: CreateAnnounceDTO,
-  //) {
-  //  if (req.user.role !== Role.TEACHER) {
-  //    throw new HttpException(
-  //      'Do Not Have Permission(Teacher)',
-  //      HttpStatus.FORBIDDEN,
-  //    );
-  //  }
-  //
-    //const courseTeacher =
-    //await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //  req.user.username,
-    //  createAnnnounceDTO.courseId,
-    //);
+  @ApiOperation({
+    summary: 'Create Announce By Course Id (Teacher)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createAnnounceByCourseId(
+    @Request() req: IRequest,
+    @Body() createAnnnounceDTO: CreateAnnounceDTO,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
 
-    //if (!courseTeacher) {
-    //  throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //}
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
 
-    //const announce = await this.announceService.createAnnounceByCourseId(
-    //  createAnnnounceDTO,
-    //  req.user.username,
-    //);
-    //return {
-    //  message: 'Successfully Get Announce',
-    //  data: announce,
-    //};
-    //}
+    const course = await this.courseService.getCourseById(
+      createAnnnounceDTO.courseId,
+    );
+    if (!course) {
+      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
+    }
 
-    //@ApiOperation({
-    //  summary: 'Update Announce By Id (Teacher)',
-    //})
-    //@UseGuards(AuthGuard('jwt'))
-    //@Patch(':id')
-    //async updateAnnounceById(
-    //  @Request() req: IRequest,
-    //  @Param('id') id: string,
-    //  @Body() updateAnnounceDTO: UpdateAnnounceDTO,
-    //) {
-    //  if (req.user.role !== Role.TEACHER) {
-    //    throw new HttpException(
-    //      'Do Not Have Permission(Teahcer)',
-    //      HttpStatus.FORBIDDEN,
-    //    );
-    //  }
-    //  const invalidAnnounce = await this.announceService.getAnnouceById(id);
-    //  if (!invalidAnnounce) {
-    //    throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
-    //  }
-    //
-    //  const courseTeacher =
-    //    await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //      req.user.username,
-    //      invalidAnnounce.courseId,
-    //    );
-    //
-    //  if (!courseTeacher) {
-    //    throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //  }
-    //
-    //  const announce = await this.announceService.updateAnnounceById(
-    //    id,
-    //    updateAnnounceDTO,
-    //  );
-    //
-    //  return {
-    //    message: 'Successfully Update Announce',
-    //    data: announce,
-    //  };
-    //}
-    //
-    //@ApiOperation({
-    //  summary: 'Delete Announce By Id (Teacher)',
-    //})
-    //@UseGuards(AuthGuard('jwt'))
-    //@Delete(':id')
-    //async deleteAnnounceById(@Request() req: IRequest, @Param('id') id: string) {
-    //  if (req.user.role !== Role.TEACHER) {
-    //    throw new HttpException(
-    //      'Do Not Have Permission(Teacher)',
-    //      HttpStatus.FORBIDDEN,
-    //    );
-    //  }
-    //  const invalidAnnounce = await this.announceService.getAnnouceById(id);
-    //  if (!invalidAnnounce) {
-    //    throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
-    //  }
-    //
-    //  const courseTeacher =
-    //    await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //      req.user.username,
-    //      invalidAnnounce.courseId,
-    //    );
-    //
-    //  if (!courseTeacher) {
-    //    throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //  }
-    //  const announce = await this.announceService.deleteAnnounceById(id);
-    //
-    //  return {
-    //    message: 'Successfully Delete Announce',
-    //    data: announce,
-    //  };
-    //}
-    //
-    //@ApiOperation({
-    //  summary: 'Create Reply Announce By Announce Id (Teacher, Student)',
-    //})
-    //@UseGuards(AuthGuard('jwt'))
-    //@Post('reply')
-    //async createReplyByAnnounceId(
-    //  @Request() req: IRequest,
-    //  @Body() createReplyDTO: CreateReplyDTO,
-    //) {
-    //  if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-    //    throw new HttpException(
-    //      'Do Not Have Permission(Teacher, Student)',
-    //      HttpStatus.FORBIDDEN,
-    //    );
-    //  }
-    //
-    //  const courseAnnounce = await this.announceService.getAnnouceById(
-    //    createReplyDTO.courseAnnounceId,
-    //  );
-    //  if (!courseAnnounce) {
-    //    throw new HttpException(
-    //      'Course Announce Not Found',
-    //      HttpStatus.NOT_FOUND,
-    //    );
-    //  }
-    //
-    //  const courseTeacher =
-    //    await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //      req.user.username,
-    //      courseAnnounce.courseId,
-    //    );
-    //
-    //  if (!courseTeacher) {
-    //    throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //  }
-    //
-    //  const reply = await this.replyService.createReplyByAnnounceId(
-    //    createReplyDTO,
-    //    req.user.username,
-    //  );
-    //  return {
-    //    message: 'Create Reply Successfully',
-    //    data: reply,
-    //  };
-    //}
-    //
-    //@ApiOperation({
-    //  summary: 'Get Reply Announce By Announce Id (Teacher, Student)',
-    //})
-    //@UseGuards(AuthGuard('jwt'))
-    //@Get('reply/:announceId')
-    //async getReplyByAnnnounceId(
-    //  @Request() req: IRequest,
-    //  @Param('announceId') announceId: string,
-    //) {
-    //  const announce = await this.announceService.getAnnouceById(announceId);
-    //  const courseStudent =
-    //    await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-    //      req.user.username,
-    //      announce?.courseId as string,
-    //    );
-    //  const courseTeacher =
-    //    await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //      req.user.username,
-    //      announce?.courseId as string,
-    //    );
-    //
-    //  if (!courseStudent && !courseTeacher) {
-    //    throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //  }
-    //
-    //  const reply = await this.replyService.getReplyByAnnounceId(announceId);
-    //  if (reply.length === 0) {
-    //    throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
-    //  }
-    //
-    //  return {
-    //    message: 'Successfully Get Reply',
-    //    data: reply,
-    //  };
-    //}
-    //
-    //@ApiOperation({
-    //  summary: 'Update Reply By Reply Id (Teacher, Student)',
-    //})
-    //@UseGuards(AuthGuard('jwt'))
-    //@Patch('reply/edit/:id')
-    //async updateReplyAnnounceById(
-    //    @Request() req: IRequest,
-    //    @Param('id') id: string,
-    //    @Body() updateReplyDTO: UpdateReplyDTO,
-    //  ) {
-    //    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-    //      throw new HttpException(
-    //        'Do Not Have Permission(Teacher, Student)',
-    //        HttpStatus.FORBIDDEN,
-    //      );
-    //    }
-    //
-    //    const invalidReply = await this.replyService.getReplyById(id);
-    //    if (!invalidReply) {
-    //      throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
-    //    }
-    //
-    //    const announce = await this.announceService.getAnnouceById(
-    //      invalidReply.courseAnnounceId,
-    //    );
-    //    const courseStudent =
-    //      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-    //        req.user.username,
-    //        announce?.courseId as string,
-    //      );
-    //    const courseTeacher =
-    //      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-    //        req.user.username,
-    //        announce?.courseId as string,
-    //      );
-    //
-    //    if (!courseStudent && !courseTeacher) {
-    //      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    //    }
-    //
-    //    const reply = await this.replyService.updateReplyById(updateReplyDTO, id);
-    //
-    //    return {
-    //      message: 'Successfully Update Reply',
-    //      data: reply,
-    //    };
-  //}
+    const validTeacher = course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    if (!validTeacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const announce = await this.announceService.createAnnounceByCourseId(
+      createAnnnounceDTO,
+      req.user.username,
+    );
+
+    return {
+      message: 'Successfully Create Announce',
+      data: announce,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Update Announce By Id (Teacher)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async updateAnnounceById(
+    @Request() req: IRequest,
+    @Param('id') id: string,
+    @Body() updateAnnounceDTO: UpdateAnnounceDTO,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    const validAnnounce = await this.announceService.getAnnouceById(id);
+
+    if (!validAnnounce) {
+      throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const validTeacher = validAnnounce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    if (!validTeacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const announce = await this.announceService.updateAnnounceById(
+      id,
+      updateAnnounceDTO,
+    );
+
+    return {
+      message: 'Successfully Update Announce',
+      data: announce,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Delete Announce By Id (Teacher)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deleteAnnounceById(@Request() req: IRequest, @Param('id') id: string) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    const validAnnounce = await this.announceService.getAnnouceById(id);
+    if (!validAnnounce) {
+      throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const validTeacher = validAnnounce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    if (!validTeacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+    const announce = await this.announceService.deleteAnnounceById(id);
+
+    return {
+      message: 'Successfully Delete Announce',
+      data: announce,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Create Reply Announce By Announce Id (Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('reply')
+  async createReplyByAnnounceId(
+    @Request() req: IRequest,
+    @Body() createReplyDTO: CreateReplyDTO,
+  ) {
+    const announce = await this.announceService.getAnnouceById(
+      createReplyDTO.courseAnnounceId,
+    );
+
+    if (!announce) {
+      throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const validTeacher = announce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    const validStudent = announce?.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!validTeacher && !validStudent) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const reply = await this.replyService.createReplyByAnnounceId(
+      createReplyDTO,
+      req.user.username,
+    );
+
+    return {
+      message: 'Create Reply Successfully',
+      data: reply,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Update Reply By Reply Id (Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Patch('reply/:replyId')
+  async updateReplyAnnounceById(
+    @Request() req: IRequest,
+    @Param('replyId') replyId: string,
+    @Body() updateReplyDTO: UpdateReplyDTO,
+  ) {
+    const validReply = await this.replyService.getReplyById(replyId);
+
+    if (!validReply) {
+      throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const validTeacher = validReply?.courseAnnounce.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    const validStudent = validReply?.courseAnnounce.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!validTeacher && !validStudent) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const reply = await this.replyService.updateReplyById(
+      updateReplyDTO,
+      replyId,
+    );
+
+    return {
+      message: 'Successfully Update Reply',
+      data: reply,
+    };
+  }
 }
