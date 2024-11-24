@@ -6,4 +6,7 @@ export class CreateCourseDTO {
 
   @ApiProperty()
   description: string;
+
+  @ApiProperty({ type: 'string', format: 'binary' })
+  picture: Express.Multer.File;
 }

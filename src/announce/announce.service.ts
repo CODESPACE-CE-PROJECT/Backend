@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAnnounceDTO } from './dto/createAnnounce.dto';
 import { UpdateCourseDTO } from 'src/course/dto/updateCourse.dto';
+import { UpdateAnnounceDTO } from './dto/updateAnnounce.dto';
 
 @Injectable()
 export class AnnounceService {
@@ -51,7 +52,7 @@ export class AnnounceService {
     }
   }
 
-  async updateAnnounceById(id: string, updateAnnounceDTO: UpdateCourseDTO) {
+  async updateAnnounceById(id: string, updateAnnounceDTO: UpdateAnnounceDTO) {
     try {
       const announce = await this.prisma.courseAnnounce.update({
         where: {

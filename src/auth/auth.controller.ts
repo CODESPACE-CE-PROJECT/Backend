@@ -24,6 +24,7 @@ import { Record } from '@prisma/client/runtime/library';
 import { JwtRefreshAuthGuard } from './refresh-auth.guard';
 import { IPayload } from './interface/payload.interface';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { request } from 'http';
 
 @ApiTags('Authenication')
 @Controller('auth')
@@ -48,7 +49,7 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout (Student, Teacher, Admin)' })
+  @ApiOperation({ summary: 'Refresh Token (Student, Teacher, Admin)' })
   @UseGuards(JwtRefreshAuthGuard)
   @Post('refresh')
   refresh(@Request() req: IRequest) {
