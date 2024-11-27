@@ -23,10 +23,7 @@ class Constraint {
   quantities: number;
 }
 
-export class CreateProblemDTO {
-  @ApiProperty()
-  assignmentId: string;
-
+class Problem {
   @ApiProperty()
   title: string;
 
@@ -36,7 +33,7 @@ export class CreateProblemDTO {
   @ApiProperty()
   hint: string;
 
-  @ApiProperty({ enum: ['C', 'CPP', 'JAVA', 'PYTHON'] })
+  @ApiProperty({ enum: ['C', "CPP'", 'JAVA', 'PYTHON'] })
   language: LanguageType;
 
   @ApiProperty()
@@ -53,4 +50,12 @@ export class CreateProblemDTO {
 
   @ApiProperty({ type: Constraint, isArray: true })
   constraint: Constraint[];
+}
+
+export class CreateProblemDTO {
+  @ApiProperty()
+  assignmentId: string;
+
+  @ApiProperty({ type: Problem, isArray: true })
+  problem: Problem[];
 }

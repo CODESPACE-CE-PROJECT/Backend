@@ -21,6 +21,7 @@ import { Role } from '@prisma/client';
 import { UpdateProblemDTO } from './dto/updateProblemDTO.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UtilsService } from 'src/utils/utils.service';
+import { ConfigService } from '@nestjs/config';
 
 @ApiBearerAuth()
 @ApiTags('Problem')
@@ -30,6 +31,7 @@ export class ProblemController {
     private readonly problemService: ProblemService,
     private readonly assignmentService: AssignmentService,
     private readonly utilsService: UtilsService,
+    private readonly configService: ConfigService,
   ) {}
 
   @ApiOperation({
@@ -133,6 +135,20 @@ export class ProblemController {
 
     if (!teacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const count = await this.problemService.countProblemByAssignmentId(
+      createProblemDTO.assignmentId,
+    );
+
+    if (
+      createProblemDTO.problem.length + count >
+      this.configService.getOrThrow('PROBLEM_LIMIT')
+    ) {
+      throw new HttpException(
+        `Can not Create Over ${this.configService.getOrThrow('PROBLEM_LIMIT')}`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const problem =

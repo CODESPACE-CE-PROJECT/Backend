@@ -34,6 +34,19 @@ export class ProblemService {
     }
   }
 
+  async countProblemByAssignmentId(assignmentId: string) {
+    try {
+      const count = await this.prisma.problem.count({
+        where: {
+          assignmentId: assignmentId,
+        },
+      });
+      return count;
+    } catch (error) {
+      throw new Error('Error Fetch Count Problem');
+    }
+  }
+
   async getTestCaseAndConstraintByProblemId(id: string) {
     try {
       const testcase = await this.prisma.problem.findFirst({
@@ -53,32 +66,39 @@ export class ProblemService {
 
   async createProblemByAssignmentId(createProblemDTO: CreateProblemDTO) {
     try {
-      const problem = await this.prisma.problem.create({
-        include: {
-          testCases: true,
-          constraint: true,
-        },
-        data: {
-          title: createProblemDTO.title,
-          description: createProblemDTO.description,
-          hint: createProblemDTO.hint,
-          revaleCode: createProblemDTO.revaleCode,
-          isRegex: createProblemDTO.isRegex,
-          assignmentId: createProblemDTO.assignmentId,
-          score: createProblemDTO.score,
-          testCases: {
-            createMany: {
-              data: createProblemDTO.testcase,
+      const problems = await Promise.all(
+        createProblemDTO.problem.map(async (problem) => {
+          const resultProblem = await this.prisma.problem.create({
+            include: {
+              testCases: true,
+              constraint: true,
             },
-          },
-          constraint: {
-            createMany: {
-              data: createProblemDTO.constraint,
+            data: {
+              title: problem.title,
+              description: problem.description,
+              hint: problem.hint,
+              revaleCode: problem.revaleCode,
+              isRegex: problem.isRegex,
+              assignmentId: createProblemDTO.assignmentId,
+              language: problem.language,
+              score: problem.score,
+              testCases: {
+                createMany: {
+                  data: problem.testcase,
+                },
+              },
+              constraint: {
+                createMany: {
+                  data: problem.constraint,
+                },
+              },
             },
-          },
-        },
-      });
-      return problem;
+          });
+          return resultProblem;
+        }),
+      );
+
+      return problems;
     } catch (error) {
       throw new Error('Error Create Problem');
     }
