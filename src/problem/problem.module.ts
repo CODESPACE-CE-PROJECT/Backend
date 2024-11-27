@@ -3,18 +3,10 @@ import { ProblemService } from './problem.service';
 import { ProblemController } from './problem.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { AssignmentModule } from 'src/assignment/assignment.module';
-import { CourseModule } from 'src/course/course.module';
-import { TestcaseModule } from 'src/testcase/testcase.module';
-import { ConstraintModule } from 'src/constraint/constraint.module';
+import { UtilsModule } from 'src/utils/utils.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    AssignmentModule,
-    CourseModule,
-    TestcaseModule,
-    ConstraintModule,
-  ],
+  imports: [PrismaModule, AssignmentModule, UtilsModule],
   controllers: [ProblemController],
   providers: [ProblemService],
   exports: [ProblemService],

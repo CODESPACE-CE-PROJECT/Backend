@@ -8,209 +8,163 @@ import {
   Post,
   Body,
   Param,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { SubmissionService } from './submission.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { Role } from '@prisma/client';
 import { SubmissionDTO } from './dto/submission.dto';
-import { FetchSubmissionDTO } from './dto/fetchSubmission.dto';
 import { ProblemService } from 'src/problem/problem.service';
-import { AssignmentService } from 'src/assignment/assignment.service';
-import { CourseService } from 'src/course/course.service';
+import { UtilsService } from 'src/utils/utils.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiBearerAuth()
 @ApiTags('Submission')
 @Controller('submission')
 export class SubmissionController {
-  //  constructor(
-  //    private readonly submissionService: SubmissionService,
-  //    private readonly problemService: ProblemService,
-  //    private readonly assignmentService: AssignmentService,
-  //    private readonly courseService: CourseService,
-  //    private readonly courseStudentService: CourseStudentService,
-  //    private readonly courseTeacherService: CourseTeacherService,
-  //  ) {}
-  //
-  //  @ApiOperation({ summary: 'Get All Submission (Admin)' })
-  //  @UseGuards(AuthGuard('jwt'))
-  //  @Get()
-  //  async getAllSubmission(@Request() req: IRequest) {
-  //    if (req.user.role !== Role.ADMIN) {
-  //      throw new HttpException(
-  //        'Do Not Have Permission(Admin)',
-  //        HttpStatus.FORBIDDEN,
-  //      );
-  //    }
-  //
-  //    const submission = await this.submissionService.getAllSubmission();
-  //    return {
-  //      message: 'Successfully Get Submission',
-  //      data: submission,
-  //    };
-  //  }
-  //
-  //  @ApiOperation({
-  //    summary: 'Get Submission By Id With Username Your Self (Teacher, Student)',
-  //  })
-  //  @UseGuards(AuthGuard('jwt'))
-  //  @Get(':id')
-  //  async getSubmissionById(@Request() req: IRequest, @Param('id') id: string) {
-  //    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-  //      throw new HttpException(
-  //        'Do Not Have Permission(Teacher, student)',
-  //        HttpStatus.FORBIDDEN,
-  //      );
-  //    }
-  //    const invalidSubmission =
-  //      await this.submissionService.getSubmissionById(id);
-  //    if (!invalidSubmission) {
-  //      throw new HttpException('Submission Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //    if (invalidSubmission.username !== req.user.username) {
-  //      throw new HttpException(
-  //        'This Submission Not Your',
-  //        HttpStatus.BAD_REQUEST,
-  //      );
-  //    }
-  //    return {
-  //      message: 'Successfully Get Submission',
-  //      data: invalidSubmission,
-  //    };
-  //  }
-  //
-  //  @ApiOperation({
-  //    summary: 'Get All Submission By Username and ProblemId (Teacher)',
-  //  })
-  //  @UseGuards(AuthGuard('jwt'))
-  //  @Post('getSubmission')
-  //  async getAllSubmissionByUsernameAndProblemId(
-  //    @Request() req: IRequest,
-  //    @Body() fetchSubmissionDTO: FetchSubmissionDTO,
-  //  ) {
-  //    if (req.user.role !== Role.TEACHER) {
-  //      throw new HttpException(
-  //        'Do Not Have Permission(Teacher)',
-  //        HttpStatus.FORBIDDEN,
-  //      );
-  //    }
-  //
-  //    const problem = await this.problemService.getProblemById(
-  //      fetchSubmissionDTO.problemId,
-  //    );
-  //    if (!problem) {
-  //      throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //    const assignment = await this.assignmentService.getAssigmentById(
-  //      problem.assignmentId,
-  //    );
-  //
-  //    if (!assignment) {
-  //      throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //
-  //    const course = await this.courseService.getCourseById(assignment.courseId);
-  //    if (!assignment) {
-  //      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //
-  //    const courseTeacher =
-  //      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-  //        req.user.username,
-  //        course?.courseId as string,
-  //      );
-  //    const courseStudent =
-  //      await this.courseStudentService.getCourseStudentByUsernameAndCourseId(
-  //        fetchSubmissionDTO.username,
-  //        course?.courseId as string,
-  //      );
-  //    if (!courseTeacher) {
-  //      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-  //    }
-  //
-  //    if (!courseStudent) {
-  //      throw new HttpException(
-  //        'Student Not In This Course',
-  //        HttpStatus.BAD_REQUEST,
-  //      );
-  //    }
-  //
-  //    const submission =
-  //      await this.submissionService.getSubmissionByUsernameAndProblemId(
-  //        fetchSubmissionDTO.username,
-  //        fetchSubmissionDTO.problemId,
-  //      );
-  //    if (submission.length === 0) {
-  //      throw new HttpException('Submission Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //    return {
-  //      message: 'Successfully Get Submission',
-  //      data: submission,
-  //    };
-  //  }
-  //
-  //  @ApiOperation({ summary: 'Create Submission (Student, Teacher)' })
-  //  @UseGuards(AuthGuard('jwt'))
-  //  @Post()
-  //  async createSubmission(
-  //    @Request() req: IRequest,
-  //    @Body() submissionDTO: SubmissionDTO,
-  //  ) {
-  //    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-  //      throw new HttpException(
-  //        'Do Not Have Permission(Techer, Student)',
-  //        HttpStatus.FORBIDDEN,
-  //      );
-  //    }
-  //
-  //    const problem = await this.problemService.getProblemById(
-  //      submissionDTO.problemId,
-  //    );
-  //    if (!problem) {
-  //      throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //    const assignment = await this.assignmentService.getAssigmentById(
-  //      problem.assignmentId,
-  //    );
-  //
-  //    if (!assignment) {
-  //      throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //
-  //    const course = await this.courseService.getCourseById(assignment.courseId);
-  //    if (!course) {
-  //      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
-  //    }
-  //    const courseTeacher =
-  //      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-  //        req.user.username,
-  //        course?.courseId as string,
-  //      );
-  //    const courseStudent =
-  //      await this.courseStudentService.getCourseStudentByUsernameAndCourseId(
-  //        req.user.username,
-  //        course?.courseId as string,
-  //      );
-  //    if (!courseTeacher && !courseStudent) {
-  //      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-  //    }
-  //
-  //    const noSubmission =
-  //      (await this.submissionService.countSubmissionByUsernameAndProblemId(
-  //        req.user.username,
-  //        submissionDTO.problemId,
-  //      )) || 1;
-  //
-  //    const submission =
-  //      await this.submissionService.createSubmissionByUsernameAndProblemId(
-  //        submissionDTO,
-  //        noSubmission,
-  //        req.user.username,
-  //      );
-  //    return {
-  //      message: 'Successfully Create Submission',
-  //      data: submission,
-  //    };
-  //  }
+  constructor(
+    private readonly submissionService: SubmissionService,
+    private readonly problemService: ProblemService,
+    private readonly utilsService: UtilsService,
+  ) {}
+
+  @ApiOperation({ summary: 'Get All Submission (Admin)' })
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getAllSubmission(@Request() req: IRequest) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+    const submission = await this.submissionService.getAllSubmission();
+    return {
+      message: 'Successfully Get Submission',
+      data: submission,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Get Submission By Id With Username Your Self (Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async getSubmissionById(
+    @Request() req: IRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const validSubmission = await this.submissionService.getSubmissionById(id);
+
+    if (!validSubmission) {
+      throw new HttpException('Submission Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    if (validSubmission.username !== req.user.username) {
+      throw new HttpException(
+        'This Submission Not Your',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return {
+      message: 'Successfully Get Submission',
+      data: validSubmission,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Get All Submission By Username and ProblemId (Teacher)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post(':problemId/:username')
+  async getAllSubmissionByUsernameAndProblemId(
+    @Request() req: IRequest,
+    @Param('problemId', ParseUUIDPipe) problemId: string,
+    @Param('username') username: string,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    const problem = await this.problemService.getProblemById(problemId);
+    if (!problem) {
+      throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const teacher = problem.assignment.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+    const student = problem.assignment.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!teacher && !student) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+    const submission =
+      await this.submissionService.getSubmissionByUsernameAndProblemId(
+        username,
+        problemId,
+      );
+
+    return {
+      message: 'Successfully Get Submission',
+      data: submission,
+    };
+  }
+
+  @ApiOperation({ summary: 'Create Submission (Student, Teacher)' })
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createSubmission(
+    @Request() req: IRequest,
+    @Body() submissionDTO: SubmissionDTO,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+      Role.STUDENT,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    const problem = await this.problemService.getProblemById(
+      submissionDTO.problemId,
+    );
+    if (!problem) {
+      throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
+    }
+    const teacher = problem.assignment.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+    const student = problem.assignment.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!teacher && !student) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const noSubmission =
+      (await this.submissionService.countSubmissionByUsernameAndProblemId(
+        req.user.username,
+        submissionDTO.problemId,
+      )) + 1;
+
+    const submission =
+      await this.submissionService.createSubmissionByUsernameAndProblemId(
+        submissionDTO,
+        noSubmission,
+        req.user.username,
+      );
+    return {
+      message: 'Successfully Create Submission',
+      data: submission,
+    };
+  }
 }

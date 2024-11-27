@@ -188,7 +188,7 @@ model Submission {
 
 model Constraint {
   constraintId String  @id @default(uuid())
-  type         String
+  type         ConstraintType 
   keyword      String
   quantities   Int
   problemId    String
@@ -245,9 +245,16 @@ enum PackageType {
 enum StateSubmission {
   PASS
   FAILED
+  NOTSEND
 }
 
 enum NotificationType {
   ACTION
   ANNOUNCE
+}
+
+enum ConstraintType {
+  FUNCTION
+  METHOD
+  CLASS
 }

@@ -3,10 +3,10 @@ import { AssignmentService } from './assignment.service';
 import { AssignmentController } from './assignment.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { CourseModule } from 'src/course/course.module';
-import { ConfigModule } from '@nestjs/config';
+import { UtilsModule } from 'src/utils/utils.module';
 
 @Module({
-  imports: [PrismaModule, CourseModule, ConfigModule],
+  imports: [PrismaModule, CourseModule, UtilsModule],
   controllers: [AssignmentController],
   providers: [AssignmentService],
   exports: [AssignmentService],

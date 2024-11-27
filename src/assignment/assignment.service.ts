@@ -1,25 +1,44 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
-import { AssignmentType } from '@prisma/client';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
-import { AddDateAssignmentDTO } from './dto/addDateAssignment.dto';
-import { UpdateLockAssignmentDTO } from './dto/updateLOckAssignment.dto';
+import { AnnounceAssignmentType, AssignmentType } from '@prisma/client';
 
 @Injectable()
 export class AssignmentService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAssigmentById(id: string) {
+  async getAssignmentById(id: string) {
     try {
       const assignment = await this.prisma.assignment.findUnique({
         where: {
           assignmentId: id,
         },
+        include: {
+          course: {
+            include: {
+              courseTeacher: true,
+            },
+          },
+        },
       });
       return assignment;
     } catch (error) {
       throw new Error('Error Fetch Assignment');
+    }
+  }
+
+  async checkTitleExistByCourseId(courseId: string, title: string) {
+    try {
+      const isExist = await this.prisma.assignment.findFirst({
+        where: {
+          courseId: courseId,
+          title: title,
+        },
+      });
+      return isExist !== null;
+    } catch (error) {
+      throw new Error('Error Fetch Assignemnt');
     }
   }
 
@@ -61,52 +80,26 @@ export class AssignmentService {
       const assignment = await this.prisma.assignment.create({
         data: {
           title: createAssignmentDTO.title,
-          type:
-            createAssignmentDTO.type === 'Exercise'
-              ? AssignmentType.EXERCISE
-              : AssignmentType.EXAMONLINE,
+          type: createAssignmentDTO.type,
           courseId: createAssignmentDTO.courseId,
-          isLock: false,
-          startAt: new Date(),
-          expireAt: new Date(),
+          isLock: true,
+          announceType:
+            createAssignmentDTO.type === AssignmentType.EXAMONLINE ||
+            AssignmentType.EXAMONSITE
+              ? AnnounceAssignmentType.SET
+              : AnnounceAssignmentType.UNSET,
+          announceDate:
+            createAssignmentDTO.type === AssignmentType.EXAMONSITE ||
+            AssignmentType.EXAMONLINE
+              ? createAssignmentDTO.startAt
+              : '',
+          startAt: createAssignmentDTO.startAt,
+          expireAt: createAssignmentDTO.expireAt,
         },
       });
       return assignment;
     } catch (error) {
       throw new Error('Error Create Assignment');
-    }
-  }
-
-  async countAssignment(courseId: string) {
-    try {
-      const count = await this.prisma.assignment.count({
-        where: {
-          courseId: courseId,
-        },
-      });
-      return count;
-    } catch (error) {
-      throw new Error('Error Get Count Assignment');
-    }
-  }
-
-  async addDateAssignmentById(
-    addDateAssignmentDTO: AddDateAssignmentDTO,
-    id: string,
-  ) {
-    try {
-      const assignment = await this.prisma.assignment.update({
-        where: {
-          assignmentId: id,
-        },
-        data: {
-          startAt: addDateAssignmentDTO.startAt,
-          expireAt: addDateAssignmentDTO.expireAt,
-        },
-      });
-      return assignment;
-    } catch (error) {
-      throw new Error('Error Add Date Assignment');
     }
   }
 
@@ -121,10 +114,19 @@ export class AssignmentService {
         },
         data: {
           title: updateAssignmentDTO.title,
-          type:
-            updateAssignmentDTO.type === 'Exercise'
-              ? AssignmentType.EXERCISE
-              : AssignmentType.EXAMONLINE,
+          type: updateAssignmentDTO.type,
+          announceType:
+            updateAssignmentDTO.type === AssignmentType.EXAMONLINE ||
+            AssignmentType.EXAMONSITE
+              ? AnnounceAssignmentType.SET
+              : AnnounceAssignmentType.UNSET,
+          announceDate:
+            updateAssignmentDTO.type === AssignmentType.EXAMONSITE ||
+            AssignmentType.EXAMONLINE
+              ? updateAssignmentDTO.startAt
+              : '',
+          startAt: updateAssignmentDTO.startAt,
+          expireAt: updateAssignmentDTO.expireAt,
         },
       });
       return assignment;
@@ -133,17 +135,14 @@ export class AssignmentService {
     }
   }
 
-  async updateLockAssignmentById(
-    updateLockAssignmentDTO: UpdateLockAssignmentDTO,
-    id: string,
-  ) {
+  async updateLockAssignmentById(lock: boolean, id: string) {
     try {
       const assignment = await this.prisma.assignment.update({
         where: {
           assignmentId: id,
         },
         data: {
-          isLock: updateLockAssignmentDTO.isLock,
+          isLock: lock,
         },
       });
       return assignment;

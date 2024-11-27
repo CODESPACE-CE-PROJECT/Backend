@@ -33,6 +33,7 @@ export class CourseService {
         },
         include: {
           courseTeacher: true,
+          courseStudent: true,
         },
       });
       return course;

@@ -7,23 +7,6 @@ import { UpdateProblemDTO } from './dto/updateProblemDTO.dto';
 export class ProblemService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProblemByAssignmentId(assignmentId: string) {
-    try {
-      const problem = await this.prisma.problem.findMany({
-        where: {
-          assignmentId: assignmentId,
-        },
-        include: {
-          testCases: true,
-          constraint: true,
-        },
-      });
-      return problem;
-    } catch (error) {
-      throw new Error('Error Fetch Problem');
-    }
-  }
-
   async getProblemById(id: string) {
     try {
       const problem = await this.prisma.problem.findUnique({
@@ -31,6 +14,16 @@ export class ProblemService {
           problemId: id,
         },
         include: {
+          assignment: {
+            select: {
+              course: {
+                select: {
+                  courseTeacher: true,
+                  courseStudent: true,
+                },
+              },
+            },
+          },
           testCases: true,
           constraint: true,
         },
@@ -41,19 +34,48 @@ export class ProblemService {
     }
   }
 
+  async getTestCaseAndConstraintByProblemId(id: string) {
+    try {
+      const testcase = await this.prisma.problem.findFirst({
+        where: {
+          problemId: id,
+        },
+        select: {
+          testCases: true,
+          constraint: true,
+        },
+      });
+      return testcase;
+    } catch (error) {
+      throw new Error('Error Fetch Test Case');
+    }
+  }
+
   async createProblemByAssignmentId(createProblemDTO: CreateProblemDTO) {
     try {
       const problem = await this.prisma.problem.create({
+        include: {
+          testCases: true,
+          constraint: true,
+        },
         data: {
           title: createProblemDTO.title,
           description: createProblemDTO.description,
           hint: createProblemDTO.hint,
           revaleCode: createProblemDTO.revaleCode,
-          isRegex:
-            createProblemDTO.isRegex.toString() === 'true' ||
-            createProblemDTO.isRegex === true,
+          isRegex: createProblemDTO.isRegex,
           assignmentId: createProblemDTO.assignmentId,
-          score: parseInt(createProblemDTO.score.toString(), 10),
+          score: createProblemDTO.score,
+          testCases: {
+            createMany: {
+              data: createProblemDTO.testcase,
+            },
+          },
+          constraint: {
+            createMany: {
+              data: createProblemDTO.constraint,
+            },
+          },
         },
       });
       return problem;
@@ -65,6 +87,10 @@ export class ProblemService {
   async updateProblemById(id: string, updateProblemDTO: UpdateProblemDTO) {
     try {
       const problem = await this.prisma.problem.update({
+        include: {
+          testCases: true,
+          constraint: true,
+        },
         where: {
           problemId: id,
         },
@@ -73,10 +99,20 @@ export class ProblemService {
           description: updateProblemDTO.description,
           hint: updateProblemDTO.hint,
           revaleCode: updateProblemDTO.revaleCode,
-          isRegex:
-            updateProblemDTO.isRegex.toString() === 'true' ||
-            updateProblemDTO.isRegex === true,
-          score: parseInt(updateProblemDTO.score.toString(), 10),
+          isRegex: updateProblemDTO.isRegex,
+          score: updateProblemDTO.score,
+          testCases: {
+            deleteMany: {},
+            createMany: {
+              data: updateProblemDTO.testcase,
+            },
+          },
+          constraint: {
+            deleteMany: {},
+            createMany: {
+              data: updateProblemDTO.constraint,
+            },
+          },
         },
       });
       return problem;
