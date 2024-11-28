@@ -1,10 +1,17 @@
-interface IFileFormat {
+export enum ValidateType {
+  NOTEXIST = 'NOTEXIST',
+  EXIST = 'EXIST',
+  DUPLICATE = 'DUPLICATE',
+}
+
+export interface IFileFormat {
   studentId: string;
   firstname: string;
   lastname: string;
-  gender: 'male' | 'female' | 'other';
+  gender: string;
   username: string;
   password: string;
-  emil: string | undefined;
-  role: 'teacher' | 'student';
+  email: string | undefined;
+  role: string;
+  validType: ValidateType;
 }

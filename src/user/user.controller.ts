@@ -38,6 +38,7 @@ import { CreateUserDTO } from './dto/createUserDTO.dto';
 import { UpdateUserDTO } from './dto/updateUserDTO.dto';
 import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
 import { importFileExelDTO } from './dto/importFileExelDTO.dto';
+import { IFileFormat, ValidateType } from './interface/fileFormat.interface';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -161,13 +162,13 @@ export class UserController {
     };
   }
 
-  @ApiOperation({ summary: 'Import File Exel (Admin, Teacher)' })
+  @ApiOperation({ summary: 'Import File Excel (Admin, Teacher)' })
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: importFileExelDTO })
   @Post('file')
-  async importExel(
+  async importExcel(
     @Request() req: IRequest,
     @UploadedFile(
       new ParseFilePipe({
@@ -178,7 +179,7 @@ export class UserController {
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel',
           }),
         ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
+        exceptionFactory: () => new BadRequestException('Invalid file upload'),
       }),
     )
     file: Express.Multer.File,
@@ -191,25 +192,89 @@ export class UserController {
       throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
-    try {
-      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    const users: IFileFormat[] = [];
+    const errors: string[] = [];
 
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
+    // Parse the Excel file
+    workbook.SheetNames.forEach((sheetName) => {
+      const sheetData = XLSX.utils.sheet_to_json(
+        workbook.Sheets[sheetName],
+      ) as any[];
 
-      const jsonData = XLSX.utils.sheet_to_json(sheet);
+      sheetData.forEach((user: IFileFormat, rowIndex) => {
+        const rowErrors: string[] = [];
 
-      console.log(jsonData);
+        if (!user.firstname) rowErrors.push('firstname is required');
+        if (!user.lastname) rowErrors.push('lastname is required');
+        if (!user.gender || !['male', 'female', 'other'].includes(user.gender))
+          rowErrors.push('gender must be one of "male", "female", "other"');
+        if (!user.username) rowErrors.push('username is required');
+        if (!user.password) rowErrors.push('password is required');
+        if (user.role !== 'teacher' && user.role !== 'student')
+          rowErrors.push('role must be "teacher" or "student"');
+        if (user.email && !/^\S+@\S+\.\S+$/.test(user.email)) {
+          rowErrors.push('email must be a valid email address');
+        }
 
-      return {
-        message: 'Excel file processed successfully',
-        data: jsonData, // You can return the parsed data for debugging or processing
-      };
-    } catch (error) {
-      throw new Error('Error processing Excel file');
+        if (rowErrors.length > 0) {
+          errors.push(
+            `Sheet "${sheetName}", Row ${rowIndex + 2}: ${rowErrors.join(', ')}`,
+          );
+        } else {
+          user.gender = user.gender.toUpperCase();
+          user.role = user.role.toUpperCase();
+          users.push({ ...user, validType: ValidateType.NOTEXIST });
+        }
+      });
+    });
+
+    if (errors.length > 0) {
+      throw new BadRequestException({
+        message: 'Some rows contained errors',
+        errors,
+      });
     }
-  }
 
+    const seen = new Map<string, IFileFormat[]>();
+    const duplicates: IFileFormat[] = [];
+    const processedUsers = users.map((user) => {
+      const key = `${user.studentId}-${user.username}`;
+      if (seen.has(key)) {
+        seen.get(key)!.push(user);
+        duplicates.push(user);
+        return { ...user, validType: ValidateType.DUPLICATE };
+      }
+      seen.set(key, [user]);
+      return { ...user, validType: ValidateType.NOTEXIST }; // Initial assumption
+    });
+
+    const finalUsers = await Promise.all(
+      processedUsers.map(async (user) => {
+        if (user.validType === ValidateType.DUPLICATE) return user;
+
+        const existingUser = await this.userService.getUserByUsername(
+          user.username,
+        );
+        const existingEmail = user.email
+          ? await this.userService.getUserByEmail(user.email)
+          : null;
+
+        if (existingUser || existingEmail) {
+          return {
+            ...user,
+            validType: ValidateType.EXIST,
+          };
+        }
+        return user;
+      }),
+    );
+
+    return {
+      message: 'Excel file processed successfully',
+      data: finalUsers,
+    };
+  }
   @ApiOperation({ summary: 'Create User Account (Admin, Teacher)' })
   @UseGuards(JwtAuthGuard)
   @Post()

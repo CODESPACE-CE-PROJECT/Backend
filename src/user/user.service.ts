@@ -247,11 +247,4 @@ export class UserService {
       throw new Error('Error Count Student Account');
     }
   }
-
-  async checkUserInDB() {
-    try {
-    } catch (error) {
-      throw new Error('Error Check Exitst User');
-    }
-  }
 }
