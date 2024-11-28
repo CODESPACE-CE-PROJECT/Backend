@@ -20,20 +20,24 @@ import {
 import { UserService } from './user.service';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiConsumes,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role, Users } from '@prisma/client';
+import { Role } from '@prisma/client';
+import * as XLSX from 'xlsx';
 import { SchoolService } from 'src/school/school.service';
 import { UpdateProfileDTO } from './dto/upadteProfile.dto';
 import { IRequest } from 'src/auth/interface/request.interface';
-import { Request as RequestExpress, Express } from 'express';
+import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UtilsService } from 'src/utils/utils.service';
 import { CreateUserDTO } from './dto/createUserDTO.dto';
 import { UpdateUserDTO } from './dto/updateUserDTO.dto';
+import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
+import { importFileExelDTO } from './dto/importFileExelDTO.dto';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -157,6 +161,55 @@ export class UserController {
     };
   }
 
+  @ApiOperation({ summary: 'Import File Exel (Admin, Teacher)' })
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: importFileExelDTO })
+  @Post('file')
+  async importExel(
+    @Request() req: IRequest,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({
+            fileType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel',
+          }),
+        ],
+        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+      console.log(jsonData);
+
+      return {
+        message: 'Excel file processed successfully',
+        data: jsonData, // You can return the parsed data for debugging or processing
+      };
+    } catch (error) {
+      throw new Error('Error processing Excel file');
+    }
+  }
+
   @ApiOperation({ summary: 'Create User Account (Admin, Teacher)' })
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -246,19 +299,18 @@ export class UserController {
     };
   }
 
-  @ApiOperation({ summary: 'Update IP Address (Student,Teacher,Admin)' })
+  @ApiOperation({
+    summary: 'Update IP Address And Active Status (Student,Teacher,Admin)',
+  })
   @UseGuards(JwtAuthGuard)
-  @Get('update-ip')
-  async setIpAddressByusername(@Request() req: RequestExpress) {
-    const ip =
-      req.headers['cf-connecting-ip']?.toString() ||
-      req.headers['x-real-ip']?.toString() ||
-      req.headers['x-forwarded-for']?.toString() ||
-      req.socket.remoteAddress?.toString() ||
-      '';
-    const user = await this.userService.setIpAddressByUsername(
-      req.user as Users,
-      ip,
+  @Patch('realtime')
+  async updateRealTime(
+    @Request() req: IRequest,
+    @Body() updateRealTimeDTO: UpdateRealTimeDTO,
+  ) {
+    const user = await this.userService.setRealTimeByUsername(
+      req.user.username,
+      updateRealTimeDTO,
     );
     if (!user) {
       throw new HttpException(

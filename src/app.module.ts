@@ -11,6 +11,7 @@ import { SubmissionModule } from './submission/submission.module';
 import { CodeSpaceModule } from './code-space/code-space.module';
 import { AppController } from './app.controller';
 import { PermissionModule } from './permission/permission.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PermissionModule } from './permission/permission.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     SchoolModule,
     MinioClientModule,

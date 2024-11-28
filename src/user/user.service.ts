@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Role, Users } from '@prisma/client';
+import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
 import { CreateUserDTO } from './dto/createUserDTO.dto';
 import { UpdateProfileDTO } from './dto/upadteProfile.dto';
 import { UpdateUserDTO } from './dto/updateUserDTO.dto';
+import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
 
 @Injectable()
 export class UserService {
@@ -199,19 +200,23 @@ export class UserService {
     }
   }
 
-  async setIpAddressByUsername(_user: Users, ipAdd: string) {
+  async setRealTimeByUsername(
+    username: string,
+    updateUserDTO: UpdateRealTimeDTO,
+  ) {
     try {
       const user = await this.prisma.users.update({
         where: {
-          username: _user.username,
+          username: username,
         },
         data: {
-          IpAddress: ipAdd,
+          IpAddress: updateUserDTO.ipAddress,
+          isActived: updateUserDTO.isActive,
         },
       });
       return user;
     } catch (error) {
-      throw new Error('Error Set Ip Address');
+      throw new Error('Error Set ');
     }
   }
 
@@ -240,6 +245,13 @@ export class UserService {
       return count;
     } catch (error) {
       throw new Error('Error Count Student Account');
+    }
+  }
+
+  async checkUserInDB() {
+    try {
+    } catch (error) {
+      throw new Error('Error Check Exitst User');
     }
   }
 }

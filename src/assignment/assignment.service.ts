@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
 import { AnnounceAssignmentType, AssignmentType } from '@prisma/client';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class AssignmentService {
@@ -161,6 +162,46 @@ export class AssignmentService {
       return assignment;
     } catch (error) {
       throw new Error('Error Delete Assignment');
+    }
+  }
+
+  @Cron('*/5 * * * * *') // This runs every 5 seconds
+  async handleCourseLock() {
+    try {
+      const assignments = await this.prisma.assignment.findMany({
+        select: {
+          assignmentId: true,
+          startAt: true,
+          expireAt: true,
+        },
+      });
+
+      const currentDate = new Date();
+
+      for (const assignment of assignments) {
+        if (
+          currentDate >= new Date(assignment.startAt) &&
+          currentDate < new Date(assignment.expireAt)
+        ) {
+          await this.prisma.assignment.update({
+            where: { assignmentId: assignment.assignmentId },
+            data: {
+              isLock: false, // Unlock the assignment
+            },
+          });
+        }
+
+        if (currentDate >= new Date(assignment.expireAt)) {
+          await this.prisma.assignment.update({
+            where: { assignmentId: assignment.assignmentId },
+            data: {
+              isLock: true, // Lock the assignment
+            },
+          });
+        }
+      }
+    } catch (error) {
+      throw new Error('Error In Cron job Assignment');
     }
   }
 }
