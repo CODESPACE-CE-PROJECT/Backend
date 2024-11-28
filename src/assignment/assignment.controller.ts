@@ -70,6 +70,33 @@ export class AssignmentController {
     const assignments =
       await this.assignmentService.getAssigmentByCourseId(courseId);
 
+    if (req.user.role === Role.TEACHER) {
+      const updateAssignment = assignments.map((assignment) => {
+        const updateProblems = assignment.problem.map((problem) => {
+          return {
+            problemId: problem.problemId,
+            score: problem.score,
+          };
+        });
+        const totalScore = updateProblems.reduce(
+          (total, curr) => total + curr.score,
+          0,
+        );
+
+        delete (assignment as { problem?: Problem[] }).problem;
+        return {
+          ...assignment,
+          problem: updateProblems,
+          totalScore: totalScore,
+        };
+      });
+
+      return {
+        message: 'Successfully Get Assignment',
+        data: updateAssignment,
+      };
+    }
+
     const problemIds = assignments.flatMap((assignment) =>
       assignment.problem.map((problem) => problem.problemId),
     );
@@ -96,18 +123,113 @@ export class AssignmentController {
         return {
           problemId: problem.problemId,
           score: problem.score,
-          status: submissionMap[problem.problemId] || StateSubmission.NOTSEND,
+          stateSubmission:
+            submissionMap[problem.problemId] || StateSubmission.NOTSEND,
         };
       });
+
+      const totalScore = updatedProblems
+        .filter((problem) => problem.stateSubmission === StateSubmission.PASS)
+        .reduce((total, curr) => total + curr.score, 0);
+
       delete (assignment as { problem?: Problem[] }).problem;
+
       return {
         ...assignment,
         problem: updatedProblems,
+        totalScore: totalScore,
       };
     });
+
     return {
       message: 'Successfully Get Assignment',
       data: updatedAssignments,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Get All People Score Assignment By Course Id (Teacher)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get(':courseId/score')
+  async getPeopleScoreByAssignemtId(
+    @Request() req: IRequest,
+    @Param('courseId', ParseUUIDPipe) courseId: string,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+    const course = await this.courseService.getCourseById(courseId);
+
+    if (!course) {
+      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const teacher = course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
+    );
+
+    if (!teacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const assignments =
+      await this.assignmentService.getAssigmentByCourseId(courseId);
+
+    const score = await Promise.all(
+      assignments.map(async (assignment) => {
+        const scoresPerStudent = await Promise.all(
+          course.courseStudent.map(async (student) => {
+            const submissions =
+              await this.assignmentService.getManySubmissonByUsernameAndProblemId(
+                student.username,
+                assignment.problem.map((problem) => problem.problemId),
+              );
+
+            const problemScores = assignment.problem.map((problem) => {
+              const submission = submissions.find(
+                (sub) => sub.problemId === problem.problemId,
+              );
+
+              const isPass =
+                submission?.stateSubmission === StateSubmission.PASS;
+              return {
+                problemId: problem.problemId,
+                score: isPass ? problem.score : 0,
+                status: submission?.stateSubmission || StateSubmission.NOTSEND,
+              };
+            });
+
+            const totalScore = problemScores.reduce(
+              (total, p) => total + p.score,
+              0,
+            );
+
+            return {
+              username: student.username,
+              firstName: student.user.firstName,
+              lastName: student.user.lastName,
+              problems: problemScores,
+              totalScore,
+            };
+          }),
+        );
+
+        return {
+          assignmentId: assignment.assignmentId,
+          title: assignment.title,
+          scores: scoresPerStudent,
+        };
+      }),
+    );
+
+    return {
+      message: 'Successfully Get People Score',
+      data: score,
     };
   }
 

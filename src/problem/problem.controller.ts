@@ -13,7 +13,12 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ProblemService } from './problem.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+} from '@nestjs/swagger';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { AssignmentService } from 'src/assignment/assignment.service';
 import { CreateProblemDTO } from './dto/createProblemDTO.dto';

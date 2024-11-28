@@ -276,14 +276,19 @@ export class CourseController {
     const user = await Promise.all(
       addUserToCourseDTO.users.map(async (username) => {
         const user = await this.userService.getUserByUsername(username);
+        const course = await this.courseService.getCourseByIdAndUsername(
+          addUserToCourseDTO.courseId,
+          username,
+        );
         return {
           username: user?.username,
           valid: user !== null,
           role: user?.role,
-          isInCourse: await this.courseService.getCourseByIdAndUsername(
-            addUserToCourseDTO.courseId,
-            username,
-          ),
+          isInCourse:
+            (course?.courseStudent?.length || 0) > 0 ||
+            (course?.courseTeacher?.length || 0) > 0
+              ? course
+              : null,
         };
       }),
     );
