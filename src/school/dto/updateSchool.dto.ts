@@ -6,7 +6,7 @@ export class UpdateSchoolDTO {
   schoolName: string;
 
   @ApiProperty({ type: 'string', format: 'binary' })
-  picture: Express.Multer.File;
+  picture: Express.Multer.File | null;
 
   @ApiProperty({ enum: ['STANDARD', 'PREMIUM'] })
   package: PackageType;

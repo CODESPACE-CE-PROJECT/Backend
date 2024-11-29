@@ -39,6 +39,7 @@ import { UpdateUserDTO } from './dto/updateUserDTO.dto';
 import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
 import { importFileExelDTO } from './dto/importFileExelDTO.dto';
 import { IFileFormat, ValidateType } from './interface/fileFormat.interface';
+import { ResetPasswordDTO } from './dto/resetPasswordDTO.dto';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -140,24 +141,52 @@ export class UserController {
   async updateProfile(
     @Request() req: IRequest,
     @Body() updateProfileDTO: UpdateProfileDTO,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    picture: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
-    updateProfileDTO.picture = picture;
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateProfileDTO.picture = picture;
+    } else {
+      updateProfileDTO.picture = null; // Handle no file uploaded
+    }
     const user = await this.userService.updateProfile(
       req.user.username,
       updateProfileDTO,
     );
     return {
       message: 'Successfully Update Profile',
+      data: user,
+    };
+  }
+
+  @ApiOperation({ summary: 'Update Password Profile (Student,Teacher,Admin)' })
+  @UseGuards(JwtAuthGuard)
+  @Post('profile/update-password')
+  async updatePassword(
+    @Request() req: IRequest,
+    @Body() resetPasswordDTO: ResetPasswordDTO,
+  ) {
+    if (resetPasswordDTO.password !== resetPasswordDTO.confirmPassword) {
+      throw new HttpException('Password Not Match', HttpStatus.BAD_REQUEST);
+    }
+    const user = await this.userService.resetPasswordProfile(
+      req.user.username,
+      resetPasswordDTO,
+    );
+    return {
+      message: 'Successfully Update Password Profile',
       data: user,
     };
   }
@@ -275,6 +304,7 @@ export class UserController {
       data: finalUsers,
     };
   }
+
   @ApiOperation({ summary: 'Create User Account (Admin, Teacher)' })
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -395,16 +425,7 @@ export class UserController {
     @Request() req: IRequest,
     @Param('username') username: string,
     @Body() updateUserDTO: UpdateUserDTO,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    picture: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
     const resultPermit = await this.utilsService.checkPermissionRole(req, [
       Role.ADMIN,
@@ -443,12 +464,30 @@ export class UserController {
       );
     }
 
-    updateUserDTO.picture = picture;
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateUserDTO.picture = picture;
+    } else {
+      updateUserDTO.picture = null; // Handle no file uploaded
+    }
 
     const user = await this.userService.updateUserByUsername(
       username,
       updateUserDTO,
     );
+
     return {
       message: 'Successfully Update User',
       data: user,

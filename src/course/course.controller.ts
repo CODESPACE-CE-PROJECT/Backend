@@ -12,9 +12,6 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
   BadRequestException,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -147,16 +144,7 @@ export class CourseController {
   async createCourse(
     @Body() createCourseDTO: CreateCourseDTO,
     @Request() req: IRequest,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    picture: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
     const resultPermit = await this.utilsService.checkPermissionRole(req, [
       Role.TEACHER,
@@ -191,7 +179,26 @@ export class CourseController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    createCourseDTO.picture = picture;
+
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      createCourseDTO.picture = picture;
+    } else {
+      createCourseDTO.picture = null; // Handle no file uploaded
+    }
+
     const course = await this.courseService.createCourse(
       createCourseDTO,
       req.user.username,
@@ -212,16 +219,7 @@ export class CourseController {
     @Request() req: IRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCourseDTO: UpdateCourseDTO,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    picture: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
     const resultPermit = await this.utilsService.checkPermissionRole(req, [
       Role.TEACHER,
@@ -246,7 +244,24 @@ export class CourseController {
       );
     }
 
-    updateCourseDTO.picture = picture;
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateCourseDTO.picture = picture;
+    } else {
+      updateCourseDTO.picture = null; // Handle no file uploaded
+    }
 
     const updatedCourse = await this.courseService.updateCourseById(
       updateCourseDTO,

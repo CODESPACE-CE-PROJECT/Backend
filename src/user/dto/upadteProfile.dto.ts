@@ -17,5 +17,5 @@ export class UpdateProfileDTO {
   gender: Gender;
 
   @ApiProperty({ type: 'string', format: 'binary' })
-  picture: Express.Multer.File;
+  picture: Express.Multer.File | null;
 }

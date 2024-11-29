@@ -55,6 +55,11 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(email: string) {
+    try {
+    } catch (error) {}
+  }
+
   async googleLogin(responseGoogle: IResponseGoogle) {
     if (!responseGoogle) {
       throw new Error('Google login failed: No User information received.');

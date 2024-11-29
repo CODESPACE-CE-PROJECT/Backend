@@ -24,7 +24,7 @@ import { Record } from '@prisma/client/runtime/library';
 import { JwtRefreshAuthGuard } from './refresh-auth.guard';
 import { IPayload } from './interface/payload.interface';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { request } from 'http';
+import { ForgotPasswordDTO } from './dto/forgotPasswordDTO.dto';
 
 @ApiTags('Authenication')
 @Controller('auth')
@@ -42,9 +42,17 @@ export class AuthController {
       req.user,
     );
     return {
-      message: 'Successfully logged in',
+      message: 'Successfully Logged In',
       accessToken: accessToken,
       refreshToken: refreshToken,
+    };
+  }
+
+  @ApiOperation({ summary: 'Forgot Password (Student, Teacher, Admin)' })
+  @Post('forgot-password')
+  async forgoPassword(@Body() forgotPasswordDTO: ForgotPasswordDTO) {
+    return {
+      message: 'Successfully Send Mail',
     };
   }
 

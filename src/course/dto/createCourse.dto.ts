@@ -8,5 +8,5 @@ export class CreateCourseDTO {
   description: string;
 
   @ApiProperty({ type: 'string', format: 'binary' })
-  picture: Express.Multer.File;
+  picture: Express.Multer.File | null;
 }

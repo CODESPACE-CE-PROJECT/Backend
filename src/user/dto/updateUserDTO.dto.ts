@@ -13,11 +13,14 @@ export class UpdateUserDTO {
   @ApiProperty()
   studentNo: string;
 
+  @ApiProperty()
+  password: string;
+
   @ApiProperty({ enum: ['MALE', 'FEMALE', 'OTHER'] })
   gender: Gender;
 
   @ApiProperty({ type: 'string', format: 'binary' })
-  picture: Express.Multer.File;
+  picture: Express.Multer.File | null;
 
   @ApiProperty()
   allowLogin: boolean;

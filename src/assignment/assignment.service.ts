@@ -173,6 +173,7 @@ export class AssignmentService {
           assignmentId: true,
           startAt: true,
           expireAt: true,
+          announceDate: true,
         },
       });
 
@@ -196,6 +197,14 @@ export class AssignmentService {
             where: { assignmentId: assignment.assignmentId },
             data: {
               isLock: true, // Lock the assignment
+            },
+          });
+        }
+        if (currentDate >= new Date(assignment.announceDate)) {
+          await this.prisma.assignment.update({
+            where: { assignmentId: assignment.assignmentId },
+            data: {
+              announceType: AnnounceAssignmentType.ANNOUNCED,
             },
           });
         }

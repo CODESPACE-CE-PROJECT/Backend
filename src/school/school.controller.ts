@@ -12,9 +12,6 @@ import {
   Request,
   UseInterceptors,
   UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
   BadRequestException,
   Patch,
 } from '@nestjs/common';
@@ -113,16 +110,7 @@ export class SchoolController {
   async createSchool(
     @Request() req: IRequest,
     @Body() createSchoolDTO: CreateSchoolDTO,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    picture: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
     const resultPermit = await this.utilsService.checkPermissionRole(req, [
       Role.ADMIN,
@@ -130,7 +118,26 @@ export class SchoolController {
     if (resultPermit) {
       throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    createSchoolDTO.picture = picture;
+
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      createSchoolDTO.picture = picture;
+    } else {
+      createSchoolDTO.picture = null; // Handle no file uploaded
+    }
+
     const school = await this.schoolService.createSchool(createSchoolDTO);
     return {
       message: 'Successfully Create School',
@@ -147,16 +154,7 @@ export class SchoolController {
     @Request() req: IRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSchoolDTO: UpdateSchoolDTO,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    picture: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
     const resultPermit = await this.utilsService.checkPermissionRole(req, [
       Role.ADMIN,
@@ -169,7 +167,26 @@ export class SchoolController {
     if (!invalidSchool) {
       throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
     }
-    updateSchoolDTO.picture = picture;
+
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateSchoolDTO.picture = picture;
+    } else {
+      updateSchoolDTO.picture = null; // Handle no file uploaded
+    }
+
     const school = await this.schoolService.updateSchoolById(
       id,
       updateSchoolDTO,

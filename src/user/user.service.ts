@@ -7,6 +7,7 @@ import { CreateUserDTO } from './dto/createUserDTO.dto';
 import { UpdateProfileDTO } from './dto/upadteProfile.dto';
 import { UpdateUserDTO } from './dto/updateUserDTO.dto';
 import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
+import { ResetPasswordDTO } from './dto/resetPasswordDTO.dto';
 
 @Injectable()
 export class UserService {
@@ -135,6 +136,28 @@ export class UserService {
     }
   }
 
+  async resetPasswordProfile(
+    username: string,
+    resetPasswordDTO: ResetPasswordDTO,
+  ) {
+    try {
+      const user = await this.prisma.users.update({
+        where: {
+          username: username,
+        },
+        data: {
+          hashedPassword: await bcrypt.hash(
+            resetPasswordDTO.password,
+            await bcrypt.genSalt(),
+          ),
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Update Password Profile');
+    }
+  }
+
   async updateUserByUsername(username: string, updateUserDTO: UpdateUserDTO) {
     try {
       let imageUrl = null;
@@ -160,8 +183,12 @@ export class UserService {
           lastName: updateUserDTO.lastName,
           studentNo: updateUserDTO.studentNo,
           pictureUrl: imageUrl?.imageUrl,
-          isEnable: updateUserDTO.isEnable.toString() === 'true',
-          allowLogin: updateUserDTO.allowLogin.toString() === 'true',
+          hashedPassword: await bcrypt.hash(
+            updateUserDTO.password,
+            await bcrypt.genSalt(),
+          ),
+          isEnable: updateUserDTO.isEnable,
+          allowLogin: updateUserDTO.allowLogin,
         },
       });
       return user;
