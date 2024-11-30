@@ -62,6 +62,7 @@ model Users {
   submission     Submission[]
   school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   notification   Notification[]
+  closedNotifications UserNotification[]
 }
 
 model CodeSpace {
@@ -197,13 +198,24 @@ model Constraint {
 
 model Notification {
   notificationId String           @id @default(uuid())
-  username       String
-  user           Users            @relation(fields: [username], references: [username], onDelete: Cascade)
+  from           String
+  sender         Users            @relation(fields: [from], references: [username], onDelete: Cascade)
   courseId       String
-  course         Course           @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  course         Course?          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   type           NotificationType
-  detail         Json?            @db.Json
-  isClose        Boolean          @default(false)
+  detail         String            
+  createdAt      DateTime         @default(now())
+  closedBy       UserNotification[] 
+}
+
+model UserNotification {
+  UserNotificationId             String              @id @default(uuid())
+  userId                         String
+  notificationId                 String
+  isClose                        Boolean          @default(false)
+  user                           Users            @relation(fields: [userId], references: [username], onDelete: Cascade)
+  notification                   Notification     @relation(fields: [notificationId], references: [notificationId], onDelete: Cascade)
+  @@unique([userId, notificationId]) 
 }
 
 enum Gender {
@@ -250,6 +262,7 @@ enum StateSubmission {
 
 enum NotificationType {
   ACTION
+  GENERAL
   ANNOUNCE
 }
 

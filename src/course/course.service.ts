@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
-import { AnnounceAssignmentType, AssignmentType, Role } from '@prisma/client';
+import { AnnounceAssignmentType, Role } from '@prisma/client';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
 import { UserService } from 'src/user/user.service';
@@ -57,21 +57,16 @@ export class CourseService {
             include: {
               replyAnnounce: {
                 orderBy: {
-                  createAt: 'asc',
+                  createAt: 'desc',
                 },
               },
             },
           },
           assignment: {
+            orderBy: {
+              announceDate: 'desc',
+            },
             where: {
-              OR: [
-                {
-                  type: AssignmentType.EXAMONSITE,
-                },
-                {
-                  type: AssignmentType.EXAMONLINE,
-                },
-              ],
               announceType: AnnounceAssignmentType.ANNOUNCED,
             },
           },
