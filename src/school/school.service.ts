@@ -16,7 +16,7 @@ export class SchoolService {
       let imageUrl = null;
       if (createSchoolDTO.picture) {
         imageUrl = await this.minio.uploadImage(
-          'profile',
+          'school',
           createSchoolDTO.picture,
           '',
         );
