@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { StateSubmission } from '@prisma/client';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 
 class result {
@@ -21,6 +22,6 @@ export class SubmissionDTO {
   })
   results: result[] | InputJsonValue;
 
-  @ApiProperty()
-  status: boolean;
+  @ApiProperty({ enum: ['PASS', , 'FAILED'] })
+  stateSubmission: StateSubmission;
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAnnounceDTO } from './dto/createAnnounce.dto';
-import { UpdateCourseDTO } from 'src/course/dto/updateCourse.dto';
+import { UpdateAnnounceDTO } from './dto/updateAnnounce.dto';
 
 @Injectable()
 export class AnnounceService {
@@ -13,18 +13,14 @@ export class AnnounceService {
         where: {
           courseAnnounceId: id,
         },
-      });
-      return announce;
-    } catch (error) {
-      throw new Error('Error Fetch Announce');
-    }
-  }
-
-  async getAnnouceByCourseId(courseId: string) {
-    try {
-      const announce = await this.prisma.courseAnnounce.findMany({
-        where: {
-          courseId: courseId,
+        include: {
+          course: {
+            include: {
+              courseTeacher: true,
+              courseStudent: true,
+            },
+          },
+          replyAnnounce: true,
         },
       });
       return announce;
@@ -41,7 +37,6 @@ export class AnnounceService {
       const announce = await this.prisma.courseAnnounce.create({
         data: {
           courseId: createAnnounceDTO.courseId,
-          title: createAnnounceDTO.title,
           description: createAnnounceDTO.description,
           username: username,
         },
@@ -52,14 +47,13 @@ export class AnnounceService {
     }
   }
 
-  async updateAnnounceById(id: string, updateAnnounceDTO: UpdateCourseDTO) {
+  async updateAnnounceById(id: string, updateAnnounceDTO: UpdateAnnounceDTO) {
     try {
       const announce = await this.prisma.courseAnnounce.update({
         where: {
           courseAnnounceId: id,
         },
         data: {
-          title: updateAnnounceDTO.title,
           description: updateAnnounceDTO.description,
         },
       });

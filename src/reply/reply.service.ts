@@ -13,20 +13,17 @@ export class ReplyService {
         where: {
           replyAnnounceId: id,
         },
-      });
-      return reply;
-    } catch (error) {
-      throw new Error('Error Fetch Reply');
-    }
-  }
-  async getReplyByAnnounceId(announceId: string) {
-    try {
-      const reply = await this.prisma.replyAnnounce.findMany({
-        where: {
-          courseAnnounceId: announceId,
-        },
         include: {
-          user: true,
+          courseAnnounce: {
+            include: {
+              course: {
+                include: {
+                  courseTeacher: true,
+                  courseStudent: true,
+                },
+              },
+            },
+          },
         },
       });
       return reply;
@@ -66,19 +63,6 @@ export class ReplyService {
       return reply;
     } catch (error) {
       throw new Error('Error Update Reply');
-    }
-  }
-
-  async deleteReplyById(id: string) {
-    try {
-      const reply = await this.prisma.replyAnnounce.delete({
-        where: {
-          replyAnnounceId: id,
-        },
-      });
-      return reply;
-    } catch (error) {
-      throw new Error('Error Delete Reply');
     }
   }
 }

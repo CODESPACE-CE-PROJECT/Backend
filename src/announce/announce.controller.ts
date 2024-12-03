@@ -18,50 +18,55 @@ import { IRequest } from 'src/auth/interface/request.interface';
 import { CreateAnnounceDTO } from './dto/createAnnounce.dto';
 import { Role } from '@prisma/client';
 import { UpdateAnnounceDTO } from './dto/updateAnnounce.dto';
-import { CourseStudentService } from 'src/course-student/course-student.service';
-import { CourseTeacherService } from 'src/course-teacher/course-teacher.service';
 import { ReplyService } from 'src/reply/reply.service';
 import { CreateReplyDTO } from 'src/reply/dto/createReply.dto';
 import { UpdateReplyDTO } from 'src/reply/dto/updateReply.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UtilsService } from 'src/utils/utils.service';
+import { CourseService } from 'src/course/course.service';
+import { join } from 'path';
 
 @ApiBearerAuth()
-@ApiTags('Announce')
+@ApiTags('Announcement')
 @Controller('announce')
 export class AnnounceController {
   constructor(
     private readonly announceService: AnnounceService,
-    private readonly courseStudentSercvice: CourseStudentService,
-    private readonly courseTeacherService: CourseTeacherService,
+    private readonly utilsService: UtilsService,
     private readonly replyService: ReplyService,
+    private readonly courseService: CourseService,
   ) {}
 
   @ApiOperation({
     summary: 'Get Announce By Course Id (Admin, Teacher, Student)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Get(':courseId')
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
   async getAnnounceByCourseId(
     @Request() req: IRequest,
-    @Param('courseId') courseId: string,
+    @Param('id') id: string,
   ) {
-    const courseStudent =
-      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        courseId,
-      );
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        courseId,
-      );
-    if (!courseStudent && !courseTeacher) {
-      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    }
+    const announce = await this.announceService.getAnnouceById(id);
 
-    const announce = await this.announceService.getAnnouceByCourseId(courseId);
-    if (announce.length === 0) {
+    if (!announce) {
       throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
     }
+
+    const validTeacher = announce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    const validStudent = announce?.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!validTeacher && !validStudent) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+    if (announce) {
+      Reflect.deleteProperty(announce, 'course');
+    }
+
     return {
       message: 'Successfully Get Announce',
       data: announce,
@@ -71,26 +76,32 @@ export class AnnounceController {
   @ApiOperation({
     summary: 'Create Announce By Course Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post()
   async createAnnounceByCourseId(
     @Request() req: IRequest,
     @Body() createAnnnounceDTO: CreateAnnounceDTO,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        createAnnnounceDTO.courseId,
-      );
+    const course = await this.courseService.getCourseById(
+      createAnnnounceDTO.courseId,
+    );
+    if (!course) {
+      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
+    }
 
-    if (!courseTeacher) {
+    const validTeacher = course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+
+    if (!validTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
@@ -98,8 +109,9 @@ export class AnnounceController {
       createAnnnounceDTO,
       req.user.username,
     );
+
     return {
-      message: 'Successfully Get Announce',
+      message: 'Successfully Create Announce',
       data: announce,
     };
   }
@@ -107,31 +119,32 @@ export class AnnounceController {
   @ApiOperation({
     summary: 'Update Announce By Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async updateAnnounceById(
     @Request() req: IRequest,
     @Param('id') id: string,
     @Body() updateAnnounceDTO: UpdateAnnounceDTO,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teahcer)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    const invalidAnnounce = await this.announceService.getAnnouceById(id);
-    if (!invalidAnnounce) {
+
+    const validAnnounce = await this.announceService.getAnnouceById(id);
+
+    if (!validAnnounce) {
       throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        invalidAnnounce.courseId,
-      );
+    const validTeacher = validAnnounce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
 
-    if (!courseTeacher) {
+    if (!validTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
@@ -149,27 +162,27 @@ export class AnnounceController {
   @ApiOperation({
     summary: 'Delete Announce By Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteAnnounceById(@Request() req: IRequest, @Param('id') id: string) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    const invalidAnnounce = await this.announceService.getAnnouceById(id);
-    if (!invalidAnnounce) {
+
+    const validAnnounce = await this.announceService.getAnnouceById(id);
+    if (!validAnnounce) {
       throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        invalidAnnounce.courseId,
-      );
+    const validTeacher = validAnnounce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
 
-    if (!courseTeacher) {
+    if (!validTeacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
     const announce = await this.announceService.deleteAnnounceById(id);
@@ -183,36 +196,29 @@ export class AnnounceController {
   @ApiOperation({
     summary: 'Create Reply Announce By Announce Id (Teacher, Student)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post('reply')
   async createReplyByAnnounceId(
     @Request() req: IRequest,
     @Body() createReplyDTO: CreateReplyDTO,
   ) {
-    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher, Student)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    const courseAnnounce = await this.announceService.getAnnouceById(
+    const announce = await this.announceService.getAnnouceById(
       createReplyDTO.courseAnnounceId,
     );
-    if (!courseAnnounce) {
-      throw new HttpException(
-        'Course Announce Not Found',
-        HttpStatus.NOT_FOUND,
-      );
+
+    if (!announce) {
+      throw new HttpException('Announce Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        courseAnnounce.courseId,
-      );
+    const validTeacher = announce?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
 
-    if (!courseTeacher) {
+    const validStudent = announce?.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!validTeacher && !validStudent) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
@@ -220,6 +226,7 @@ export class AnnounceController {
       createReplyDTO,
       req.user.username,
     );
+
     return {
       message: 'Create Reply Successfully',
       data: reply,
@@ -227,82 +234,37 @@ export class AnnounceController {
   }
 
   @ApiOperation({
-    summary: 'Get Reply Announce By Announce Id (Teacher, Student)',
-  })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('reply/:announceId')
-  async getReplyByAnnnounceId(
-    @Request() req: IRequest,
-    @Param('announceId') announceId: string,
-  ) {
-    const announce = await this.announceService.getAnnouceById(announceId);
-    const courseStudent =
-      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        announce?.courseId as string,
-      );
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        announce?.courseId as string,
-      );
-
-    if (!courseStudent && !courseTeacher) {
-      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    }
-
-    const reply = await this.replyService.getReplyByAnnounceId(announceId);
-    if (reply.length === 0) {
-      throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
-    }
-
-    return {
-      message: 'Successfully Get Reply',
-      data: reply,
-    };
-  }
-
-  @ApiOperation({
     summary: 'Update Reply By Reply Id (Teacher, Student)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('reply/edit/:id')
+  @UseGuards(JwtAuthGuard)
+  @Patch('reply/:replyId')
   async updateReplyAnnounceById(
     @Request() req: IRequest,
-    @Param('id') id: string,
+    @Param('replyId') replyId: string,
     @Body() updateReplyDTO: UpdateReplyDTO,
   ) {
-    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher, Student)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    const validReply = await this.replyService.getReplyById(replyId);
 
-    const invalidReply = await this.replyService.getReplyById(id);
-    if (!invalidReply) {
+    if (!validReply) {
       throw new HttpException('Reply Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const announce = await this.announceService.getAnnouceById(
-      invalidReply.courseAnnounceId,
+    const validTeacher = validReply?.courseAnnounce.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
     );
-    const courseStudent =
-      await this.courseStudentSercvice.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        announce?.courseId as string,
-      );
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        announce?.courseId as string,
-      );
 
-    if (!courseStudent && !courseTeacher) {
+    const validStudent = validReply?.courseAnnounce.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    if (!validTeacher && !validStudent) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
-    const reply = await this.replyService.updateReplyById(updateReplyDTO, id);
+    const reply = await this.replyService.updateReplyById(
+      updateReplyDTO,
+      replyId,
+    );
 
     return {
       message: 'Successfully Update Reply',

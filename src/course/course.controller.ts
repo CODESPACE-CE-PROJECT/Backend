@@ -12,14 +12,16 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CourseService } from './course.service';
-import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { Role } from '@prisma/client';
 import { CreateCourseDTO } from './dto/createCourse.dto';
@@ -28,6 +30,8 @@ import { UpdateCourseDTO } from './dto/updateCourse.dto';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
 import { UserService } from 'src/user/user.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UtilsService } from 'src/utils/utils.service';
 
 @ApiBearerAuth()
 @ApiTags('Course')
@@ -37,43 +41,47 @@ export class CourseController {
     private readonly courseService: CourseService,
     private readonly permissionService: PermissionService,
     private readonly userService: UserService,
+    private readonly utilsService: UtilsService,
   ) {}
 
-  @ApiOperation({ summary: 'Get All Course (Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({
+    summary: 'Get All Course By Username Yourself (Admin, Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getAllCourse(@Request() req: IRequest) {
-    if (req.user.role !== Role.ADMIN) {
-      throw new HttpException(
-        'Do Not Have Permission(Admin)',
-        HttpStatus.FORBIDDEN,
-      );
+    let course;
+    if (req.user.role === Role.ADMIN) {
+      course = await this.courseService.getAllCourse();
+    } else {
+      course = await this.courseService.getCourseByUsername(req.user.username);
     }
-    const course = await this.courseService.getAllCourse();
     return {
       message: 'Successfully Get Course',
       data: course,
     };
   }
 
-  @ApiOperation({ summary: 'Get Course By Id (Admin, Teacher, Student)' })
-  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Get Course By Id (Teacher, Student)' })
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async getCourseById(@Param('id') id: string, @Request() req: IRequest) {
-    const course = await this.courseService.getCourseById(id);
+  async getCourseById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: IRequest,
+  ) {
+    const course = await this.courseService.getCourseByIdAndUsername(
+      id,
+      req.user.username,
+    );
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
-    if (
-      req.user.schoolId !== course?.schoolId &&
-      (req.user.role === Role.STUDENT || req.user.role === Role.TEACHER)
-    ) {
-      throw new HttpException(
-        'You Can Not Get Course Not In Your School',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
+    if (!course.courseTeacher || !course.courseStudent) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+    Reflect.deleteProperty(course, 'courseStudent');
+    Reflect.deleteProperty(course, 'courseTeacher');
     return {
       message: 'Successfully Get Course',
       data: course,
@@ -81,14 +89,15 @@ export class CourseController {
   }
 
   @ApiOperation({ summary: 'Get All Course By school Id (Teacher)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('school/myid')
+  @UseGuards(JwtAuthGuard)
+  @Get('school/teacher')
   async getCourseBySchoolIdTeacher(@Request() req: IRequest) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
     const courses = await this.courseService.getCourseBySchoolId(
@@ -100,53 +109,16 @@ export class CourseController {
     };
   }
 
-  @ApiOperation({ summary: 'Get All Course By school Id (Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('school/:schoolId')
-  async getCourseBySchoolId(
-    @Request() req: IRequest,
-    @Param('schoolId') schoolId: string,
-  ) {
-    if (req.user.role !== Role.ADMIN) {
-      throw new HttpException(
-        'Do Not Have Permission(ADMIN)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    const courses = await this.courseService.getCourseBySchoolId(schoolId);
-    return {
-      message: 'Successfully get Course By School Id',
-      data: courses,
-    };
-  }
-
-  @ApiOperation({ summary: 'Get All Course By Username (Teacher, Student)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('/username/myid')
-  async getCourseByUsername(@Request() req: IRequest) {
-    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher, Student)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    const courses = await this.courseService.getCourseByUsername(
-      req.user.username,
-      req.user.role,
-    );
-    return {
-      message: 'Successfully get Course By Username',
-      data: courses,
-    };
-  }
-
   @ApiOperation({
     summary: 'Get People By Course Id (Teacher, Student)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('/people/:id')
-  async getPeopleByCourseId(@Param('id') id: string, @Request() req: IRequest) {
-    const course = await this.courseService.getCourseById(id);
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/people')
+  async getPeopleByCourseId(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: IRequest,
+  ) {
+    const course = await this.courseService.getPeopleInCourseByCourseId(id);
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
@@ -157,54 +129,35 @@ export class CourseController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    const student = await this.courseService.getStudentInCourseByCourseId(id);
-    const teacher = await this.courseService.getTeacherInCourseByCourseId(id);
-
-    if (
-      student.find((data) => data.username === req.user.username) == null &&
-      teacher.find((data) => data.username === req.user.username) == null
-    ) {
-      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    }
 
     return {
       message: 'Successfully Get Course',
-      data: {
-        teacher: teacher,
-        student: student,
-      },
+      data: course,
     };
   }
 
-  @ApiOperation({ summary: 'createCourse (Teacher)' })
-  @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FileInterceptor('background'))
+  @ApiOperation({ summary: 'Create Course (Teacher)' })
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('picture'))
+  @ApiConsumes('multipart/form-data', 'application/json')
   @Post()
   async createCourse(
     @Body() createCourseDTO: CreateCourseDTO,
     @Request() req: IRequest,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          // Validate file size (10MB max)
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
-        ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
-      }),
-    )
-    background: Express.Multer.File,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    const invalidCourse = await this.courseService.getCourseByTitle(
+
+    const validCourse = await this.courseService.getCourseByTitle(
       createCourseDTO.title,
     );
-    if (invalidCourse) {
+    if (validCourse) {
       throw new HttpException(
         'Already Have This Title Course',
         HttpStatus.BAD_REQUEST,
@@ -226,11 +179,30 @@ export class CourseController {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      createCourseDTO.picture = picture;
+    } else {
+      createCourseDTO.picture = null; // Handle no file uploaded
+    }
+
     const course = await this.courseService.createCourse(
       createCourseDTO,
       req.user.username,
       req.user.schoolId,
-      background,
     );
     return {
       message: 'Successfully Create Course',
@@ -238,134 +210,159 @@ export class CourseController {
     };
   }
 
-  @ApiOperation({ summary: 'update Course By Id (Teacher)' })
-  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Update Course By Id (Teacher)' })
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('picture'))
+  @ApiConsumes('multipart/form-data', 'application/json')
   @Patch(':id')
   async updateCourseById(
     @Request() req: IRequest,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCourseDTO: UpdateCourseDTO,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
-    const course = await this.courseService.getCourseById(id);
+    const course = await this.courseService.getCourseByIdAndUsername(
+      id,
+      req.user.username,
+    );
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
 
-    if (course.schoolId !== req.user.schoolId) {
+    if (!course.courseTeacher) {
       throw new HttpException(
-        'You Can Not Edit Course Not In Your School',
+        'You Can Not Edit This Course',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const updatedCourse = await this.courseService.updateCourse(
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateCourseDTO.picture = picture;
+    } else {
+      updateCourseDTO.picture = null; // Handle no file uploaded
+    }
+
+    const updatedCourse = await this.courseService.updateCourseById(
       updateCourseDTO,
       id,
     );
     return {
-      message: 'Successfully',
+      message: 'Successfully Update Course',
       data: updatedCourse,
     };
   }
 
-  @ApiOperation({ summary: 'Add Student To Course (Teacher)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Post('/add/student')
+  @ApiOperation({ summary: 'Add People To Course (Teacher)' })
+  @UseGuards(JwtAuthGuard)
+  @Post('add')
   async addStudentToCourse(
     @Body() addUserToCourseDTO: AddUserToCourseDTO,
     @Request() req: IRequest,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    const user = await this.userService.getUserByUsername(
-      addUserToCourseDTO.username,
+
+    const user = await Promise.all(
+      addUserToCourseDTO.users.map(async (username) => {
+        const user = await this.userService.getUserByUsername(username);
+        const course = await this.courseService.getCourseByIdAndUsername(
+          addUserToCourseDTO.courseId,
+          username,
+        );
+        return {
+          username: user?.username,
+          valid: user !== null,
+          role: user?.role,
+          isInCourse:
+            (course?.courseStudent?.length || 0) > 0 ||
+            (course?.courseTeacher?.length || 0) > 0
+              ? course
+              : null,
+        };
+      }),
     );
 
-    if (user?.role !== Role.STUDENT) {
-      throw new HttpException('User Is Not Student', HttpStatus.BAD_REQUEST);
+    if (user.find((user) => !user.valid)) {
+      throw new HttpException('User Not Found', HttpStatus.BAD_REQUEST);
     }
+
+    if (user.find((user) => user.isInCourse)) {
+      throw new HttpException(
+        'Some User Already In Course',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (user.find((user) => user.role === Role.ADMIN) !== undefined) {
+      throw new HttpException(
+        'In List Has Admin Account',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const course = await this.courseService.getCourseById(
       addUserToCourseDTO.courseId,
     );
+
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseStudent =
-      await this.courseService.addStudentToCourse(addUserToCourseDTO);
+    await this.courseService.addPeopleToCourse(addUserToCourseDTO);
 
     return {
-      message: 'Successfully Create Course',
-      data: courseStudent,
-    };
-  }
-
-  @ApiOperation({ summary: 'Add Teacher To Course (Teacher)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Post('/add/teacher')
-  async addTeacherToCourse(
-    @Body() addUserToCourseDTO: AddUserToCourseDTO,
-    @Request() req: IRequest,
-  ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    const user = await this.userService.getUserByUsername(
-      addUserToCourseDTO.username,
-    );
-
-    if (user?.role !== Role.TEACHER) {
-      throw new HttpException('User Is Not Teacher', HttpStatus.BAD_REQUEST);
-    }
-    const course = await this.courseService.getCourseById(
-      addUserToCourseDTO.courseId,
-    );
-    if (!course) {
-      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
-    }
-
-    const courseTeacher =
-      await this.courseService.addTeacherToCourse(addUserToCourseDTO);
-
-    return {
-      message: 'Successfully Create Course',
-      data: courseTeacher,
+      message: 'Successfully Add User To Course',
     };
   }
 
   @ApiOperation({
-    summary: 'Delete User From Course By Course User Id (Teacher)',
+    summary: 'Delete User From Course By Course Id And Username (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Delete('delete/user/:courseUserId')
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/user/:username')
   async deleteStudentFromCourse(
     @Request() req: IRequest,
-    @Param('courseUserId') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('username') username: string,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
     const deleteUser = await this.courseService.deleteUserFromCourse(
       id,
-      req.user.username,
+      username,
+      req,
     );
     if (deleteUser === 'User Not Found In Course') {
       throw new HttpException('User Not Found In Course', HttpStatus.NOT_FOUND);
@@ -387,16 +384,19 @@ export class CourseController {
   @ApiOperation({
     summary: 'Delete Course By Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Delete('delete/:id')
-  async deleteCourseById(@Request() req: IRequest, @Param('id') id: string) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deleteCourseById(
+    @Request() req: IRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
 
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
     const course = await this.courseService.deleteCourseById(id);
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);

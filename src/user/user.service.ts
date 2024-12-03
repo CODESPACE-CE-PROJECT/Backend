@@ -1,18 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { RegisterDTO } from './dto/register.dto';
-import { Role, Gender, Users } from '@prisma/client';
-import { UpdateUserDTO } from './dto/upadteUser.dto';
+import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
-import { ConfigService } from '@nestjs/config';
+import { CreateUserDTO } from './dto/createUserDTO.dto';
+import { UpdateProfileDTO } from './dto/upadteProfile.dto';
+import { UpdateUserDTO } from './dto/updateUserDTO.dto';
+import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
+import { ResetPasswordDTO } from './dto/resetPasswordDTO.dto';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
-    private readonly minioClient: MinioClientService,
-    private readonly configService: ConfigService,
+    private readonly minio: MinioClientService,
   ) {}
 
   async getAllUser() {
@@ -35,7 +36,11 @@ export class UserService {
           username: username,
         },
         include: {
-          school: true,
+          school: {
+            select: {
+              schoolName: true,
+            },
+          },
         },
       });
       return user;
@@ -63,52 +68,107 @@ export class UserService {
     }
   }
 
-  async getUserBySchoolId(schoolId: string) {
-    try {
-      const users = await this.prisma.users.findMany({
-        where: {
-          schoolId: schoolId,
-        },
-        omit: {
-          hashedPassword: true,
-        },
-      });
-      return users;
-    } catch (error) {
-      throw new Error('Error Fetch User');
-    }
-  }
-
-  async createUser(registerDTO: RegisterDTO, role: Role) {
+  async createUser(createUserDTO: CreateUserDTO) {
     try {
       // hashing password
-      const salt = await bcrypt.genSalt();
-      const password = await bcrypt.hash(registerDTO.password, salt);
+      const allUser = await Promise.all(
+        createUserDTO.users.map(async (user) => {
+          return {
+            schoolId: createUserDTO.schoolId,
+            username: user.username,
+            email: user.email,
+            hashedPassword: await bcrypt.hash(
+              user.password,
+              await bcrypt.genSalt(),
+            ),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            studentNo: user.studentNo,
+            role: user.role,
+            gender: user.gender,
+          };
+        }),
+      );
 
-      const user = await this.prisma.users.create({
+      const user = await this.prisma.users.createManyAndReturn({
         omit: {
           hashedPassword: true,
         },
-        data: {
-          schoolId: registerDTO.schoolId,
-          username: registerDTO.username,
-          email: registerDTO.email,
-          hashedPassword: password,
-          firstName: registerDTO.firstName,
-          lastName: registerDTO.lastName,
-          studentNo: registerDTO.studentNo,
-          role: role,
-          gender: registerDTO.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
-        },
+        data: allUser,
       });
       return user;
     } catch (err) {
+      console.log(err);
       throw new Error('Error Create User');
+    }
+  }
+
+  async updateProfile(username: string, updateProfileDTO: UpdateProfileDTO) {
+    try {
+      let imageUrl = null;
+      if (updateProfileDTO.picture) {
+        imageUrl = await this.minio.uploadImage(
+          'profile',
+          updateProfileDTO.picture,
+          '',
+        );
+      }
+
+      const user = await this.prisma.users.update({
+        omit: {
+          hashedPassword: true,
+        },
+        where: {
+          username: username,
+        },
+        data: {
+          email: updateProfileDTO.email,
+          gender: updateProfileDTO.gender,
+          firstName: updateProfileDTO.firstName,
+          lastName: updateProfileDTO.lastName,
+          studentNo: updateProfileDTO.studentNo,
+          pictureUrl: imageUrl?.imageUrl,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Update Profile');
+    }
+  }
+
+  async resetPasswordProfile(
+    username: string,
+    resetPasswordDTO: ResetPasswordDTO,
+  ) {
+    try {
+      const user = await this.prisma.users.update({
+        where: {
+          username: username,
+        },
+        data: {
+          hashedPassword: await bcrypt.hash(
+            resetPasswordDTO.password,
+            await bcrypt.genSalt(),
+          ),
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error('Error Update Password Profile');
     }
   }
 
   async updateUserByUsername(username: string, updateUserDTO: UpdateUserDTO) {
     try {
+      let imageUrl = null;
+      if (updateUserDTO.picture) {
+        imageUrl = await this.minio.uploadImage(
+          'profile',
+          updateUserDTO.picture,
+          '',
+        );
+      }
+
       const user = await this.prisma.users.update({
         omit: {
           hashedPassword: true,
@@ -118,14 +178,22 @@ export class UserService {
         },
         data: {
           email: updateUserDTO.email,
-          gender: updateUserDTO.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
+          gender: updateUserDTO.gender,
           firstName: updateUserDTO.firstName,
           lastName: updateUserDTO.lastName,
           studentNo: updateUserDTO.studentNo,
+          pictureUrl: imageUrl?.imageUrl,
+          hashedPassword: await bcrypt.hash(
+            updateUserDTO.password,
+            await bcrypt.genSalt(),
+          ),
+          isEnable: updateUserDTO.isEnable,
+          allowLogin: updateUserDTO.allowLogin,
         },
       });
       return user;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Update User');
     }
   }
@@ -159,43 +227,23 @@ export class UserService {
     }
   }
 
-  async setIpAddressByUsername(_user: Users, ipAdd: string) {
-    try {
-      const user = await this.prisma.users.update({
-        where: {
-          username: _user.username,
-        },
-        data: {
-          IpAddress: ipAdd,
-        },
-      });
-      return user;
-    } catch (error) {
-      throw new Error('Error Set Ip Address');
-    }
-  }
-
-  async uploadAvatarProfile(
-    file: Express.Multer.File,
+  async setRealTimeByUsername(
     username: string,
-    pictureUrl: string | null,
+    updateUserDTO: UpdateRealTimeDTO,
   ) {
     try {
-      const uploadedImage = await this.minioClient.uploadImage(
-        file,
-        pictureUrl,
-      );
-      await this.prisma.users.update({
+      const user = await this.prisma.users.update({
         where: {
           username: username,
         },
         data: {
-          picture: uploadedImage.imageUrl,
+          IpAddress: updateUserDTO.ipAddress,
+          isActived: updateUserDTO.isActive,
         },
       });
-      return uploadedImage.imageUrl;
+      return user;
     } catch (error) {
-      throw new Error(error);
+      throw new Error('Error Set ');
     }
   }
 

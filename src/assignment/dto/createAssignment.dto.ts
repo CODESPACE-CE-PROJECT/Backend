@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LanguageType } from '@prisma/client';
+import { AssignmentType } from '@prisma/client';
 
 export class CreateAssigmentDTO {
   @ApiProperty()
@@ -8,15 +8,12 @@ export class CreateAssigmentDTO {
   @ApiProperty()
   title: string;
 
-  @ApiProperty()
-  description: string;
+  @ApiProperty({ enum: ['EXERCISE', 'EXAMONLINE', 'EXAMONSITE'] })
+  type: AssignmentType;
 
   @ApiProperty()
-  type: string;
+  startAt: Date;
 
   @ApiProperty()
-  language: LanguageType;
-
-  @ApiProperty()
-  problemQuantities: number;
+  expireAt: Date;
 }

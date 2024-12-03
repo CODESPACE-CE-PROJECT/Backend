@@ -5,5 +5,5 @@ export class AddUserToCourseDTO {
   courseId: string;
 
   @ApiProperty()
-  username: string;
+  users: string[];
 }

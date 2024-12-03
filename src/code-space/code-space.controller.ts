@@ -10,13 +10,14 @@ import {
   Patch,
   Param,
   Delete,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { CodeSpaceService } from './code-space.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { CreateCodeSpaceDTO } from './dto/createCodeSpace.dto';
 import { UpdateCodeSpaceDTO } from './dto/updateCodeSpace.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiBearerAuth()
 @ApiTags('Code Space')
@@ -27,15 +28,13 @@ export class CodeSpaceController {
   @ApiOperation({
     summary: 'Get CodeSpace By Username Your Self (Teacher, Student, Admin)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getCodeSpaceByUsername(@Request() req: IRequest) {
     const codespace = await this.codeSpaceService.getCodeSpaceByUsername(
       req.user.username,
     );
-    if (codespace.length === 0) {
-      throw new HttpException('Code Space Not Found', HttpStatus.NOT_FOUND);
-    }
+
     return {
       message: 'Successfullly Get Code Space',
       data: codespace,
@@ -45,7 +44,7 @@ export class CodeSpaceController {
   @ApiOperation({
     summary: 'Create CodeSpace By Username Your Self (Teacher, Student, Admin)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post()
   async createCodeSpaceByUsername(
     @Request() req: IRequest,
@@ -64,18 +63,18 @@ export class CodeSpaceController {
   @ApiOperation({
     summary: 'Update CodeSpace By Username Your Self (Teacher, Student, Admin)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async updateCodeSpceById(
     @Request() req: IRequest,
     @Body() updateCodeSpaceDTO: UpdateCodeSpaceDTO,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const invalidCodeSpace = await this.codeSpaceService.getCodeSpaceById(id);
-    if (!invalidCodeSpace) {
+    const validCodeSpace = await this.codeSpaceService.getCodeSpaceById(id);
+    if (!validCodeSpace) {
       throw new HttpException('Code Space Not Found', HttpStatus.NOT_FOUND);
     }
-    if (invalidCodeSpace.username !== req.user.username) {
+    if (validCodeSpace.username !== req.user.username) {
       throw new HttpException(
         'This Code Space Not Your',
         HttpStatus.BAD_REQUEST,
@@ -86,6 +85,7 @@ export class CodeSpaceController {
       id,
       updateCodeSpaceDTO,
     );
+
     return {
       message: 'Successfullly Update Code Space',
       data: codespace,
@@ -95,14 +95,17 @@ export class CodeSpaceController {
   @ApiOperation({
     summary: 'Delete CodeSpace By Username Your Self (Teacher, Student, Admin)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async deleteCodeSpceById(@Request() req: IRequest, @Param('id') id: string) {
-    const invalidCodeSpace = await this.codeSpaceService.getCodeSpaceById(id);
-    if (!invalidCodeSpace) {
+  async deleteCodeSpceById(
+    @Request() req: IRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const validCodeSpace = await this.codeSpaceService.getCodeSpaceById(id);
+    if (!validCodeSpace) {
       throw new HttpException('Code Space Not Found', HttpStatus.NOT_FOUND);
     }
-    if (invalidCodeSpace.username !== req.user.username) {
+    if (validCodeSpace.username !== req.user.username) {
       throw new HttpException(
         'This Code Space Not Your',
         HttpStatus.BAD_REQUEST,
@@ -110,6 +113,7 @@ export class CodeSpaceController {
     }
 
     const codespace = await this.codeSpaceService.deleteCodeSpaceById(id);
+
     return {
       message: 'Successfullly Update Code Space',
       data: codespace,

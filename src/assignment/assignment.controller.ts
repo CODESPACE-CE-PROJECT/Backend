@@ -10,20 +10,18 @@ import {
   Body,
   Patch,
   Delete,
+  ParseUUIDPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { AssignmentService } from './assignment.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
-import { CourseStudentService } from 'src/course-student/course-student.service';
-import { CourseTeacherService } from 'src/course-teacher/course-teacher.service';
 import { CourseService } from 'src/course/course.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
-import { Problem, Role } from '@prisma/client';
-import { ConfigService } from '@nestjs/config';
+import { Problem, Role, StateSubmission } from '@prisma/client';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
-import { AddDateAssignmentDTO } from './dto/addDateAssignment.dto';
-import { UpdateLockAssignmentDTO } from './dto/updateLOckAssignment.dto';
+import { UtilsService } from 'src/utils/utils.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiBearerAuth()
 @ApiTags('Assignment')
@@ -31,51 +29,78 @@ import { UpdateLockAssignmentDTO } from './dto/updateLOckAssignment.dto';
 export class AssignmentController {
   constructor(
     private readonly assignmentService: AssignmentService,
-    private readonly courseStudentService: CourseStudentService,
-    private readonly courseTeacherService: CourseTeacherService,
     private readonly courseService: CourseService,
-    private readonly configService: ConfigService,
+    private readonly utilsService: UtilsService,
   ) {}
 
   @ApiOperation({
     summary: 'Get All Assignment By Course Id (Teacher, Student)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get(':courseId')
   async getAssignmentByCourseId(
     @Request() req: IRequest,
-    @Param('courseId') courseId: string,
+    @Param('courseId', ParseUUIDPipe) courseId: string,
   ) {
-    if (req.user.role !== Role.TEACHER && req.user.role !== Role.STUDENT) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+      Role.STUDENT,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
     const course = await this.courseService.getCourseById(courseId);
+
     if (!course) {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
-    const courseStudent =
-      await this.courseStudentService.getCourseStudentByUsernameAndCourseId(
-        req.user.username,
-        courseId,
-      );
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        courseId,
-      );
 
-    if (!courseStudent && !courseTeacher) {
+    const teacher = course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
+    );
+    const student = course.courseStudent.find(
+      (student) => student.username == req.user.username,
+    );
+
+    if (!teacher && !student) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
+
     const assignments =
       await this.assignmentService.getAssigmentByCourseId(courseId);
+
+    if (req.user.role === Role.TEACHER) {
+      const updateAssignment = assignments.map((assignment) => {
+        const updateProblems = assignment.problem.map((problem) => {
+          return {
+            problemId: problem.problemId,
+            score: problem.score,
+          };
+        });
+        const totalScore = updateProblems.reduce(
+          (total, curr) => total + curr.score,
+          0,
+        );
+
+        delete (assignment as { problem?: Problem[] }).problem;
+        return {
+          ...assignment,
+          problem: updateProblems,
+          totalScore: totalScore,
+        };
+      });
+
+      return {
+        message: 'Successfully Get Assignment',
+        data: updateAssignment,
+      };
+    }
 
     const problemIds = assignments.flatMap((assignment) =>
       assignment.problem.map((problem) => problem.problemId),
     );
+
     const submissions =
       await this.assignmentService.getManySubmissonByUsernameAndProblemId(
         req.user.username,
@@ -84,10 +109,13 @@ export class AssignmentController {
 
     const submissionMap = submissions.reduce(
       (acc, submission) => {
-        acc[submission.problemId] = submission.status;
+        acc[submission.problemId] =
+          acc[submission.problemId] === StateSubmission.PASS
+            ? StateSubmission.PASS
+            : submission.stateSubmission;
         return acc;
       },
-      {} as Record<string, boolean | null>,
+      {} as Record<string, StateSubmission | null>,
     );
 
     const updatedAssignments = assignments.map((assignment) => {
@@ -95,15 +123,24 @@ export class AssignmentController {
         return {
           problemId: problem.problemId,
           score: problem.score,
-          status: submissionMap[problem.problemId] || false,
+          stateSubmission:
+            submissionMap[problem.problemId] || StateSubmission.NOTSEND,
         };
       });
+
+      const totalScore = updatedProblems
+        .filter((problem) => problem.stateSubmission === StateSubmission.PASS)
+        .reduce((total, curr) => total + curr.score, 0);
+
       delete (assignment as { problem?: Problem[] }).problem;
+
       return {
         ...assignment,
         problem: updatedProblems,
+        totalScore: totalScore,
       };
     });
+
     return {
       message: 'Successfully Get Assignment',
       data: updatedAssignments,
@@ -111,19 +148,130 @@ export class AssignmentController {
   }
 
   @ApiOperation({
+    summary:
+      'Get All Assignment For Calendar By Username Yourself (Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get('calendar/info')
+  async getAllAssignmentForCalendar(@Request() req: IRequest) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+      Role.STUDENT,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+    const assignment = await this.assignmentService.getAllAssignmentForCalendar(
+      req.user.username,
+    );
+    return {
+      message: 'Successfully Get Assignment',
+      data: assignment,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Get All People Score Assignment By Course Id (Teacher)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get(':courseId/score')
+  async getPeopleScoreByAssignemtId(
+    @Request() req: IRequest,
+    @Param('courseId', ParseUUIDPipe) courseId: string,
+  ) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+    const course = await this.courseService.getCourseById(courseId);
+
+    if (!course) {
+      throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const teacher = course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
+    );
+
+    if (!teacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const assignments =
+      await this.assignmentService.getAssigmentByCourseId(courseId);
+
+    const score = await Promise.all(
+      assignments.map(async (assignment) => {
+        const scoresPerStudent = await Promise.all(
+          course.courseStudent.map(async (student) => {
+            const submissions =
+              await this.assignmentService.getManySubmissonByUsernameAndProblemId(
+                student.username,
+                assignment.problem.map((problem) => problem.problemId),
+              );
+
+            const problemScores = assignment.problem.map((problem) => {
+              const submission = submissions.find(
+                (sub) => sub.problemId === problem.problemId,
+              );
+
+              const isPass =
+                submission?.stateSubmission === StateSubmission.PASS;
+              return {
+                problemId: problem.problemId,
+                score: isPass ? problem.score : 0,
+                status: submission?.stateSubmission || StateSubmission.NOTSEND,
+              };
+            });
+
+            const totalScore = problemScores.reduce(
+              (total, p) => total + p.score,
+              0,
+            );
+
+            return {
+              username: student.username,
+              firstName: student.user.firstName,
+              lastName: student.user.lastName,
+              problems: problemScores,
+              totalScore,
+            };
+          }),
+        );
+
+        return {
+          assignmentId: assignment.assignmentId,
+          title: assignment.title,
+          scores: scoresPerStudent,
+        };
+      }),
+    );
+
+    return {
+      message: 'Successfully Get People Score',
+      data: score,
+    };
+  }
+
+  @ApiOperation({
     summary: 'Create Assignment By Course Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post()
   async createAssignmentByCourseId(
     @Request() req: IRequest,
     @Body() createAssignmentDTO: CreateAssigmentDTO,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
     const course = await this.courseService.getCourseById(
@@ -133,29 +281,32 @@ export class AssignmentController {
       throw new HttpException('Course Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        createAssignmentDTO.courseId,
-      );
-
-    if (!courseTeacher) {
-      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    }
-    const countAssignment = await this.assignmentService.countAssignment(
-      createAssignmentDTO.courseId,
+    const teacher = course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
     );
 
-    if (countAssignment >= this.configService.get('ASSIGNMENT_LIMIT')) {
+    if (!teacher) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+
+    const isTitleExitst =
+      await this.assignmentService.checkTitleExistByCourseId(
+        createAssignmentDTO.courseId,
+        createAssignmentDTO.title,
+      );
+
+    if (isTitleExitst) {
       throw new HttpException(
-        `Over the limit Create Assignment ${this.configService.get('ASSIGNMENT_LIMIT')}`,
-        HttpStatus.NOT_ACCEPTABLE,
+        'Title Already in This Course',
+        HttpStatus.BAD_REQUEST,
       );
     }
-    const assignment =
-      await this.assignmentService.createAssignmentByCourseId(
-        createAssignmentDTO,
-      );
+
+    const assignment = await this.assignmentService.createAssignmentByCourseId(
+      createAssignmentDTO,
+      req.user.username,
+    );
+
     return {
       message: 'Create Assignment Successfully',
       data: assignment,
@@ -163,80 +314,38 @@ export class AssignmentController {
   }
 
   @ApiOperation({
-    summary: 'Add Date Assignment By Id (Teacher)',
-  })
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('date/:id')
-  async addDateAssignmentById(
-    @Request() req: IRequest,
-    @Body() addDateAssignmentDTO: AddDateAssignmentDTO,
-    @Param('id') id: string,
-  ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-
-    const invalidAssignment = await this.assignmentService.getAssigmentById(id);
-    if (!invalidAssignment) {
-      throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
-    }
-
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        invalidAssignment.courseId,
-      );
-
-    if (!courseTeacher) {
-      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
-    }
-    const assignment = await this.assignmentService.addDateAssignmentById(
-      addDateAssignmentDTO,
-      id,
-    );
-
-    return {
-      message: 'Successfully Add Date Assignment',
-      data: assignment,
-    };
-  }
-
-  @ApiOperation({
     summary: 'Update Lock Assignment By Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('lock/:id')
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/:lock')
   async updatStatusAssignmentById(
     @Request() req: IRequest,
-    @Body() updateLockAssignmentDTO: UpdateLockAssignmentDTO,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('lock', ParseBoolPipe) lock: boolean,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
-    const invalidAssignment = await this.assignmentService.getAssigmentById(id);
-    if (!invalidAssignment) {
+    const validAssignment = await this.assignmentService.getAssignmentById(id);
+
+    if (!validAssignment) {
       throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        invalidAssignment.courseId,
-      );
+    const teacher = validAssignment.course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
+    );
 
-    if (!courseTeacher) {
+    if (!teacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
     const assignment = await this.assignmentService.updateLockAssignmentById(
-      updateLockAssignmentDTO,
+      lock,
       id,
     );
 
@@ -249,32 +358,32 @@ export class AssignmentController {
   @ApiOperation({
     summary: 'Update Assignment By Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async updateAssignmentById(
     @Request() req: IRequest,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAssignmentDTO: UpdateAssignmentDTO,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
-    const invalidAssignment = await this.assignmentService.getAssigmentById(id);
-    if (!invalidAssignment) {
+    const validAssignment = await this.assignmentService.getAssignmentById(id);
+
+    if (!validAssignment) {
       throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        invalidAssignment.courseId,
-      );
+    const teacher = validAssignment.course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
+    );
 
-    if (!courseTeacher) {
+    if (!teacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
@@ -291,31 +400,32 @@ export class AssignmentController {
   @ApiOperation({
     summary: 'Delete Assignment By Id (Teacher)',
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteAssignmentById(
     @Request() req: IRequest,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
   ) {
-    if (req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
-    const invalidAssignment = await this.assignmentService.getAssigmentById(id);
+    const invalidAssignment =
+      await this.assignmentService.getAssignmentById(id);
+
     if (!invalidAssignment) {
       throw new HttpException('Assignment Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const courseTeacher =
-      await this.courseTeacherService.getCourseTeacherByUsernameAndCourseId(
-        req.user.username,
-        invalidAssignment.courseId,
-      );
+    const teacher = invalidAssignment.course.courseTeacher.find(
+      (teacher) => teacher.username == req.user.username,
+    );
 
-    if (!courseTeacher) {
+    if (!teacher) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 

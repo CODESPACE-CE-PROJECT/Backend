@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateLockAssignmentDTO {
+export class ForgotPasswordDTO {
   @ApiProperty()
-  isLock: boolean;
+  email: string;
 }

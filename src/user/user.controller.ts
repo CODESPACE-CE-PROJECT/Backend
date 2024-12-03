@@ -25,15 +25,22 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { RegisterDTO } from './dto/register.dto';
-import { Role, Users } from '@prisma/client';
+import { Role } from '@prisma/client';
+import * as XLSX from 'xlsx';
 import { SchoolService } from 'src/school/school.service';
-import { UpdateUserDTO } from './dto/upadteUser.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { UpdateProfileDTO } from './dto/upadteProfile.dto';
 import { IRequest } from 'src/auth/interface/request.interface';
-import { Request as RequestExpress, Express } from 'express';
+import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { FileUploadDTO } from './dto/fileUpload.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UtilsService } from 'src/utils/utils.service';
+import { CreateUserDTO } from './dto/createUserDTO.dto';
+import { UpdateUserDTO } from './dto/updateUserDTO.dto';
+import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
+import { importFileExelDTO } from './dto/importFileExelDTO.dto';
+import { IFileFormat, ValidateType } from './interface/fileFormat.interface';
+import { ResetPasswordDTO } from './dto/resetPasswordDTO.dto';
+
 @ApiBearerAuth()
 @ApiTags('User')
 @Controller('user')
@@ -41,17 +48,18 @@ export class UserController {
   constructor(
     private userService: UserService,
     private schoolService: SchoolService,
+    private utilsService: UtilsService,
   ) {}
 
   @ApiOperation({ summary: 'Get All User (Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getAllUser(@Request() req: IRequest) {
-    if (req.user.role !== Role.ADMIN) {
-      throw new HttpException(
-        'Do Not Have Permission(Admin)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
     const users = await this.userService.getAllUser();
     return {
@@ -61,17 +69,18 @@ export class UserController {
   }
 
   @ApiOperation({ summary: 'Get User By Username (Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('username/:username')
   async getUserByUsername(
     @Request() req: IRequest,
     @Param('username') username: string,
   ) {
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher,Admin)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
     const user = await this.userService.getUserByUsername(username);
     if (!user) {
@@ -84,17 +93,18 @@ export class UserController {
   }
 
   @ApiOperation({ summary: 'Get User By Email (Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('email/:email')
   async getUserByEmail(
     @Request() req: IRequest,
     @Param('email') email: string,
   ) {
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher,Admin)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
 
     const user = await this.userService.getUserByEmail(email);
@@ -107,26 +117,15 @@ export class UserController {
     };
   }
 
-  @ApiOperation({ summary: 'Get User By School Id (Student,Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('school/:schoolId')
-  async getUserBySchoolId(@Param('schoolId') schoolId: string) {
-    const school = await this.schoolService.getSchoolById(schoolId);
-    if (!school) {
-      throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
-    }
-    const users = await this.userService.getUserBySchoolId(schoolId);
-    return {
-      message: 'Successfully get User',
-      data: users,
-    };
-  }
-
   @ApiOperation({ summary: 'Get Profile (Student, Teacher, Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req: IRequest) {
     const user = await this.userService.getUserByUsername(req.user.username);
+
+    if (user) {
+      Reflect.deleteProperty(user, 'hashedPassword');
+    }
 
     return {
       message: 'Successfully Get Profile',
@@ -135,213 +134,278 @@ export class UserController {
   }
 
   @ApiOperation({ summary: 'Edit Profile (Student,Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('profile/edit')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('picture'))
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @Patch('profile')
   async updateProfile(
     @Request() req: IRequest,
-    @Body() updateUserDTO: UpdateUserDTO,
+    @Body() updateProfileDTO: UpdateProfileDTO,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
-    const user = await this.userService.updateUserByUsername(
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateProfileDTO.picture = picture;
+    } else {
+      updateProfileDTO.picture = null; // Handle no file uploaded
+    }
+    const user = await this.userService.updateProfile(
       req.user.username,
-      updateUserDTO,
+      updateProfileDTO,
     );
     return {
-      message: 'Successfully Update User',
+      message: 'Successfully Update Profile',
       data: user,
     };
   }
 
-  @ApiOperation({ summary: 'Upload Avatar Profile (Student, Teacher, Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Update Password Profile (Student,Teacher,Admin)' })
+  @UseGuards(JwtAuthGuard)
+  @Post('profile/update-password')
+  async updatePassword(
+    @Request() req: IRequest,
+    @Body() resetPasswordDTO: ResetPasswordDTO,
+  ) {
+    if (resetPasswordDTO.password !== resetPasswordDTO.confirmPassword) {
+      throw new HttpException('Password Not Match', HttpStatus.BAD_REQUEST);
+    }
+    const user = await this.userService.resetPasswordProfile(
+      req.user.username,
+      resetPasswordDTO,
+    );
+    return {
+      message: 'Successfully Update Password Profile',
+      data: user,
+    };
+  }
+
+  @ApiOperation({ summary: 'Import File Excel (Admin, Teacher)' })
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ description: 'Upload Avatar Profile', type: FileUploadDTO })
-  @Post('profile/avatar')
-  async uploadAvatarProfile(
+  @ApiBody({ type: importFileExelDTO })
+  @Post('file')
+  async importExcel(
     @Request() req: IRequest,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          // Validate file size (10MB max)
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: 'image/jpeg|image/png' }),
+          new FileTypeValidator({
+            fileType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel',
+          }),
         ],
-        exceptionFactory: () => new BadRequestException('Invalid file Upload'),
+        exceptionFactory: () => new BadRequestException('Invalid file upload'),
       }),
     )
     file: Express.Multer.File,
   ) {
-    if (!file) {
-      throw new HttpException('No File Upload', HttpStatus.NO_CONTENT);
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    const user = await this.userService.getUserByUsername(req.user.username);
-    if (!user) {
-      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    const users: IFileFormat[] = [];
+    const errors: string[] = [];
+
+    // Parse the Excel file
+    workbook.SheetNames.forEach((sheetName) => {
+      const sheetData = XLSX.utils.sheet_to_json(
+        workbook.Sheets[sheetName],
+      ) as any[];
+
+      sheetData.forEach((user: IFileFormat, rowIndex) => {
+        const rowErrors: string[] = [];
+
+        if (!user.firstname) rowErrors.push('firstname is required');
+        if (!user.lastname) rowErrors.push('lastname is required');
+        if (!user.gender || !['male', 'female', 'other'].includes(user.gender))
+          rowErrors.push('gender must be one of "male", "female", "other"');
+        if (!user.username) rowErrors.push('username is required');
+        if (!user.password) rowErrors.push('password is required');
+        if (user.role !== 'teacher' && user.role !== 'student')
+          rowErrors.push('role must be "teacher" or "student"');
+        if (user.email && !/^\S+@\S+\.\S+$/.test(user.email)) {
+          rowErrors.push('email must be a valid email address');
+        }
+
+        if (rowErrors.length > 0) {
+          errors.push(
+            `Sheet "${sheetName}", Row ${rowIndex + 2}: ${rowErrors.join(', ')}`,
+          );
+        } else {
+          user.gender = user.gender.toUpperCase();
+          user.role = user.role.toUpperCase();
+          users.push({ ...user, validType: ValidateType.NOTEXIST });
+        }
+      });
+    });
+
+    if (errors.length > 0) {
+      throw new BadRequestException({
+        message: 'Some rows contained errors',
+        errors,
+      });
     }
-    const uploadedImage = await this.userService.uploadAvatarProfile(
-      file,
-      user.username,
-      user.picture,
+
+    const seen = new Map<string, IFileFormat[]>();
+    const duplicates: IFileFormat[] = [];
+    const processedUsers = users.map((user) => {
+      const key = `${user.studentId}-${user.username}`;
+      if (seen.has(key)) {
+        seen.get(key)!.push(user);
+        duplicates.push(user);
+        return { ...user, validType: ValidateType.DUPLICATE };
+      }
+      seen.set(key, [user]);
+      return { ...user, validType: ValidateType.NOTEXIST }; // Initial assumption
+    });
+
+    const finalUsers = await Promise.all(
+      processedUsers.map(async (user) => {
+        if (user.validType === ValidateType.DUPLICATE) return user;
+
+        const existingUser = await this.userService.getUserByUsername(
+          user.username,
+        );
+        const existingEmail = user.email
+          ? await this.userService.getUserByEmail(user.email)
+          : null;
+
+        if (existingUser || existingEmail) {
+          return {
+            ...user,
+            validType: ValidateType.EXIST,
+          };
+        }
+        return user;
+      }),
     );
+
     return {
-      message: 'Upload Avatar Profile Successfully',
-      imageUrl: uploadedImage,
+      message: 'Excel file processed successfully',
+      data: finalUsers,
     };
   }
 
-  @ApiOperation({ summary: 'Create Admin Account (Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Post('create-admin')
-  async createAdminAccount(
+  @ApiOperation({ summary: 'Create User Account (Admin, Teacher)' })
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createAccount(
     @Request() req: IRequest,
-    @Body() registerDTO: RegisterDTO,
+    @Body() createUserDTO: CreateUserDTO,
   ) {
-    if (req.user.role !== Role.ADMIN) {
-      throw new HttpException(
-        'Do Not Have Permission(Admin)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    const invalidUsername = await this.userService.getUserByUsername(
-      registerDTO.username,
-    );
-    const invalidEmail = await this.userService.getUserByEmail(
-      registerDTO.email,
-    );
+
     if (
-      invalidUsername?.username ||
-      invalidEmail?.email === registerDTO.email
+      req.user.role === Role.TEACHER &&
+      createUserDTO.users.find((user) => user.role === Role.ADMIN) !== undefined
     ) {
       throw new HttpException(
-        'Already have Username or Email',
+        'In List Has Admin Account',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const school = await this.schoolService.getSchoolById(
+      createUserDTO.schoolId,
+    );
+
+    if (!school?.permission?.canCreateUser && req.user.role === Role.TEACHER) {
+      throw new HttpException(
+        'can not have permission create user',
         HttpStatus.NOT_ACCEPTABLE,
       );
     }
-    const user = await this.userService.createUser(registerDTO, Role.ADMIN);
-    return {
-      message: 'Successfully Create Admin Account',
-      data: user,
-    };
-  }
 
-  @ApiOperation({ summary: 'Create Teacher Account (Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Post('create-teacher')
-  async createTeacherAccount(
-    @Request() req: IRequest,
-    @Body() registerDTO: RegisterDTO,
-  ) {
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher,Admin)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    if (req.user.role === Role.TEACHER) {
-      registerDTO.schoolId = req.user.schoolId;
-    }
-    const school = await this.schoolService.getSchoolById(registerDTO.schoolId);
     const countTeacher = await this.userService.countTeacherAccount(
-      registerDTO.schoolId,
+      createUserDTO.schoolId,
     );
-    const limitTeacher = school?.permission?.maxCreateTeacher as number;
-
-    if (!school?.permission?.canCreateUser && req.user.role === Role.TEACHER) {
-      throw new HttpException(
-        'Can Not Have Permission Create User',
-        HttpStatus.NOT_ACCEPTABLE,
-      );
-    }
-
-    if (countTeacher >= limitTeacher) {
-      throw new HttpException(
-        `Over limit Create Teacher ${school?.permission?.maxCreateTeacher}`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const invalidUsername = await this.userService.getUserByUsername(
-      registerDTO.username,
-    );
-
-    if (
-      invalidUsername?.username ||
-      invalidUsername?.email === registerDTO.email
-    ) {
-      throw new HttpException(
-        'Already have Username or Email',
-        HttpStatus.NOT_ACCEPTABLE,
-      );
-    }
-
-    const user = await this.userService.createUser(registerDTO, Role.TEACHER);
-    return {
-      message: 'Successfully Create Teacher Account',
-      data: user,
-    };
-  }
-  @ApiOperation({ summary: 'Create Student Account (Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Post('create-student')
-  async createStudentAccount(
-    @Request() req: IRequest,
-    @Body() registerDTO: RegisterDTO,
-  ) {
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher,Admin)',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    if (req.user.role === Role.TEACHER) {
-      registerDTO.schoolId = req.user.schoolId;
-    }
-    const school = await this.schoolService.getSchoolById(registerDTO.schoolId);
     const countStudent = await this.userService.countStudentAccount(
-      registerDTO.schoolId,
+      createUserDTO.schoolId,
     );
-    const limitStudent = school?.permission?.maxCreateStudent as number;
 
-    if (!school?.permission?.canCreateUser && req.user.role === Role.TEACHER) {
+    if (countTeacher >= (school?.permission?.maxCreateTeacher as number)) {
       throw new HttpException(
-        'Can Not Have Permission Create User',
-        HttpStatus.NOT_ACCEPTABLE,
-      );
-    }
-
-    if (countStudent >= limitStudent) {
-      throw new HttpException(
-        `Over limit Create Student ${school?.permission?.maxCreateStudent}`,
+        `Over Limit Create Teacher ${school?.permission?.maxCreateTeacher}`,
         HttpStatus.BAD_REQUEST,
       );
     }
-    const invalidUsername = await this.userService.getUserByUsername(
-      registerDTO.username,
+
+    if (countStudent >= (school?.permission?.maxCreateStudent as number)) {
+      throw new HttpException(
+        `Over Limit Create Student ${school?.permission?.maxCreateStudent}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const validate = await Promise.all(
+      createUserDTO.users.map(async (user) => {
+        const validateUsername = await this.userService.getUserByUsername(
+          user.username,
+        );
+        const validateEmail = await this.userService.getUserByEmail(user.email);
+        return {
+          username: user.username,
+          validateUsername: validateUsername !== null,
+          validateEmail: validateEmail !== null,
+        };
+      }),
     );
 
     if (
-      invalidUsername?.username ||
-      invalidUsername?.email === registerDTO.email
+      validate.find(
+        (validate) =>
+          validate.validateUsername === true || validate.validateEmail === true,
+      )
     ) {
       throw new HttpException(
         'Already have Username or Email',
         HttpStatus.NOT_ACCEPTABLE,
       );
     }
-    const user = await this.userService.createUser(registerDTO, Role.STUDENT);
+
+    const user = await this.userService.createUser(createUserDTO);
     return {
-      message: 'Successfully Create Student Account',
+      message: 'Successfully Create  Account',
       data: user,
     };
   }
 
-  @ApiOperation({ summary: 'Update IP Address (Student,Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Get('update-ip')
-  async setIpAddressByusername(@Request() req: RequestExpress) {
-    const user = await this.userService.setIpAddressByUsername(
-      req.user as Users,
-      req.socket.remoteAddress as string,
+  @ApiOperation({
+    summary: 'Update IP Address And Active Status (Student,Teacher,Admin)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Patch('realtime')
+  async updateRealTime(
+    @Request() req: IRequest,
+    @Body() updateRealTimeDTO: UpdateRealTimeDTO,
+  ) {
+    const user = await this.userService.setRealTimeByUsername(
+      req.user.username,
+      updateRealTimeDTO,
     );
     if (!user) {
       throw new HttpException(
@@ -352,79 +416,126 @@ export class UserController {
     return { message: 'Successfully Update Ip Address', data: user };
   }
 
-  @ApiOperation({ summary: 'Edit User By Username(Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('edit/:username')
+  @ApiOperation({ summary: 'Edit User By Username (Teacher,Admin)' })
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('picture'))
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @Patch('username/:username')
   async updateUserById(
     @Request() req: IRequest,
     @Param('username') username: string,
     @Body() updateUserDTO: UpdateUserDTO,
+    @UploadedFile() picture?: Express.Multer.File,
   ) {
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
-      throw new HttpException(
-        'Do Not Have Permission(Teacher,Admin)',
-        HttpStatus.FORBIDDEN,
-      );
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
     }
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
-      const permission = await this.schoolService.getSchoolById(
-        req.user.schoolId,
-      );
-      if (!permission?.permission?.canUpdateUser) {
-        throw new HttpException(
-          'Can Not Have Permission Update User',
-          HttpStatus.NOT_ACCEPTABLE,
-        );
-      }
-    }
-    const invalidUser = await this.userService.getUserByUsername(username);
-    if (!invalidUser) {
+
+    const validUser = await this.userService.getUserByUsername(username);
+    if (!validUser) {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
+
+    if (
+      validUser.schoolId !== req.user.schoolId &&
+      req.user.role === Role.TEACHER
+    ) {
+      throw new HttpException(
+        'This User In Not In Your School',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const permission = await this.schoolService.getSchoolById(
+      req.user.role === Role.ADMIN ? validUser.schoolId : req.user.schoolId,
+    );
+
+    if (
+      !permission?.permission?.canUpdateUser &&
+      req.user.role === Role.TEACHER
+    ) {
+      throw new HttpException(
+        'Can Not Have Permission Update User',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+
+    if (picture) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/png'];
+
+      if (picture.size > maxSize) {
+        throw new BadRequestException('File size exceeds the 10MB limit');
+      }
+
+      if (!allowedTypes.includes(picture.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG and PNG are allowed',
+        );
+      }
+
+      updateUserDTO.picture = picture;
+    } else {
+      updateUserDTO.picture = null; // Handle no file uploaded
+    }
+
     const user = await this.userService.updateUserByUsername(
       username,
       updateUserDTO,
     );
+
     return {
       message: 'Successfully Update User',
       data: user,
     };
   }
 
-  @ApiOperation({ summary: 'Delete User By Username(Teacher,Admin)' })
-  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Delete User By Username (Teacher,Admin)' })
+  @UseGuards(JwtAuthGuard)
   @Delete(':username')
   async deleteUserByUsername(
     @Request() req: IRequest,
     @Param('username') username: string,
   ) {
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.TEACHER) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+      Role.TEACHER,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    const user = await this.userService.getUserByUsername(username);
+    if (!user) {
+      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const permission = await this.schoolService.getSchoolById(
+      req.user.role === Role.ADMIN ? user.schoolId : req.user.schoolId,
+    );
+
+    if (
+      !permission?.permission?.canDeleteUser &&
+      req.user.role === Role.TEACHER
+    ) {
       throw new HttpException(
-        'Do Not Have Permission(Teacher,Admin)',
-        HttpStatus.FORBIDDEN,
+        'Can Not Have Permission Delete User',
+        HttpStatus.NOT_ACCEPTABLE,
       );
     }
-    if (req.user.role !== Role.ADMIN && req.user.role === Role.TEACHER) {
-      const permission = await this.schoolService.getSchoolById(
-        req.user.schoolId,
-      );
-      if (!permission?.permission?.canDeleteUser) {
-        throw new HttpException(
-          'Can Not Have Permission Delete User',
-          HttpStatus.NOT_ACCEPTABLE,
-        );
-      }
-    }
+
     if (req.user.username === username) {
       throw new HttpException(
         'Can Not Delete Your Self',
         HttpStatus.BAD_REQUEST,
       );
     }
-    const user = await this.userService.getUserByUsername(username);
-    if (!user) {
-      throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
-    }
+
     if (
       req.user.role === Role.ADMIN ||
       (req.user.role === Role.TEACHER &&

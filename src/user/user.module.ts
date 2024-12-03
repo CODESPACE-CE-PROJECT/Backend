@@ -5,9 +5,16 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { SchoolModule } from 'src/school/school.module';
 import { MinioClientModule } from 'src/minio-client/minio-client.module';
 import { ConfigModule } from '@nestjs/config';
+import { UtilsModule } from 'src/utils/utils.module';
 
 @Module({
-  imports: [PrismaModule, SchoolModule, MinioClientModule, ConfigModule],
+  imports: [
+    PrismaModule,
+    SchoolModule,
+    MinioClientModule,
+    ConfigModule,
+    UtilsModule,
+  ],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

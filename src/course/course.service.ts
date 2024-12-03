@@ -2,19 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
-import { CourseTeacherService } from 'src/course-teacher/course-teacher.service';
-import { CourseStudentService } from 'src/course-student/course-student.service';
-import { Course, Role } from '@prisma/client';
+import { AnnounceAssignmentType, Role } from '@prisma/client';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
+import { UserService } from 'src/user/user.service';
+import { IRequest } from 'src/auth/interface/request.interface';
 
 @Injectable()
 export class CourseService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly courseTeacherService: CourseTeacherService,
-    private readonly courseStudentService: CourseStudentService,
     private readonly minio: MinioClientService,
+    private readonly userService: UserService,
   ) {}
 
   async getAllCourse() {
@@ -32,10 +31,77 @@ export class CourseService {
         where: {
           courseId: courseId,
         },
+        include: {
+          courseTeacher: true,
+          courseStudent: {
+            include: {
+              user: true,
+            },
+          },
+        },
       });
       return course;
     } catch (error) {
       throw new Error('Can Not Fetch Course');
+    }
+  }
+
+  async getCourseByIdAndUsername(courseId: string, username: string) {
+    try {
+      const course = await this.prisma.course.findUnique({
+        where: {
+          courseId: courseId,
+        },
+        include: {
+          courseAnnounce: {
+            include: {
+              replyAnnounce: {
+                orderBy: {
+                  createAt: 'desc',
+                },
+              },
+            },
+          },
+          assignment: {
+            orderBy: {
+              announceDate: 'desc',
+            },
+            where: {
+              announceType: AnnounceAssignmentType.ANNOUNCED,
+            },
+          },
+          courseTeacher: {
+            where: {
+              username: username,
+            },
+          },
+          courseStudent: {
+            where: {
+              username: username,
+            },
+          },
+        },
+      });
+      return course;
+    } catch (error) {
+      throw new Error('Can Not Fetch Course');
+    }
+  }
+
+  async getPeopleById(courseId: string) {
+    try {
+      const course = await this.prisma.course.findUnique({
+        where: {
+          courseId: courseId,
+        },
+        include: {
+          courseStudent: true,
+          courseTeacher: true,
+        },
+      });
+      return course;
+    } catch (error) {
+      throw new Error('Can Not Fetch People In Course');
     }
   }
 
@@ -65,73 +131,100 @@ export class CourseService {
     }
   }
 
-  async getCourseByUsername(username: string, role: string) {
+  async getCourseByUsername(username: string) {
     try {
-      let courses: any;
-      if (role === Role.STUDENT) {
-        courses =
-          await this.courseStudentService.getCourseIdByUsername(username);
-      } else if (role === Role.TEACHER) {
-        courses =
-          await this.courseTeacherService.getCourseIdByUsername(username);
-      }
-
-      const allCourse = await Promise.all(
-        courses.map(async (item: Course) => {
-          const course = await this.getCourseById(item.courseId);
-          return course;
-        }),
-      );
-
-      return allCourse;
+      const course = await this.prisma.course.findMany({
+        where: {
+          OR: [
+            {
+              courseStudent: {
+                some: {
+                  username: username,
+                },
+              },
+            },
+            {
+              courseTeacher: {
+                some: {
+                  username: username,
+                },
+              },
+            },
+          ],
+        },
+      });
+      return course;
     } catch (error) {
       throw new Error('Can Not Fetch Course');
     }
   }
 
-  async getStudentInCourseByCourseId(courseId: string) {
+  async getPeopleInCourseByCourseId(courseId: string) {
     try {
-      const students =
-        await this.courseStudentService.getStudentByCourseId(courseId);
-      return students;
-    } catch (error) {
-      throw new Error('Can Not Fetch Student In Course');
-    }
-  }
-
-  async getTeacherInCourseByCourseId(courseId: string) {
-    try {
-      const teachers =
-        await this.courseTeacherService.getTeacherByCourseId(courseId);
-      return teachers;
-    } catch (error) {
-      throw new Error('Can Not Fetch Teacher In Course');
-    }
+      const course = await this.prisma.course.findFirst({
+        where: {
+          courseId: courseId,
+        },
+        select: {
+          courseStudent: {
+            select: {
+              courseStudentId: true,
+              user: {
+                omit: {
+                  hashedPassword: true,
+                },
+              },
+            },
+          },
+          courseTeacher: {
+            select: {
+              courseTeachertId: true,
+              user: {
+                omit: {
+                  hashedPassword: true,
+                },
+              },
+            },
+          },
+          schoolId: true,
+        },
+      });
+      return course;
+    } catch (error) {}
   }
 
   async createCourse(
     createCourseDTO: CreateCourseDTO,
     username: string,
     schoolId: string,
-    backgroundImage: Express.Multer.File,
   ) {
     try {
-      const backgroundUrl = await this.minio.uploadImage(backgroundImage, '');
+      let imageUrl = null;
+      if (createCourseDTO.picture) {
+        imageUrl = await this.minio.uploadImage(
+          'course',
+          createCourseDTO.picture,
+          '',
+        );
+      }
+
       const course = await this.prisma.course.create({
         data: {
           title: createCourseDTO.title,
           description: createCourseDTO.description,
           username: username,
           schoolId: schoolId,
-          backgroundUrl: backgroundUrl.imageUrl,
+          backgroundUrl: imageUrl?.imageUrl,
         },
       });
+
       await this.prisma.courseTeacher.create({
         data: {
           courseId: course.courseId,
           username: username,
         },
       });
+
       return course;
     } catch (error) {
       throw new Error('Error Create Course');
@@ -151,8 +244,16 @@ export class CourseService {
     }
   }
 
-  async updateCourse(updateCourseDTO: UpdateCourseDTO, courseId: string) {
+  async updateCourseById(updateCourseDTO: UpdateCourseDTO, courseId: string) {
     try {
+      let imageUrl = null;
+      if (updateCourseDTO.picture) {
+        imageUrl = await this.minio.uploadImage(
+          'course',
+          updateCourseDTO.picture,
+          '',
+        );
+      }
       const course = await this.prisma.course.update({
         where: {
           courseId: courseId,
@@ -168,51 +269,74 @@ export class CourseService {
     }
   }
 
-  async addStudentToCourse(addUserToCourseDTO: AddUserToCourseDTO) {
+  async addPeopleToCourse(addUserToCourseDTO: AddUserToCourseDTO) {
     try {
-      const user = await this.courseStudentService.addStudentToCourse(
-        addUserToCourseDTO.username,
-        addUserToCourseDTO.courseId,
+      await Promise.all(
+        addUserToCourseDTO.users.map(async (username) => {
+          const data = await this.userService.getUserByUsername(username);
+          if (data?.role === Role.TEACHER) {
+            await this.prisma.courseTeacher.create({
+              data: {
+                username: username,
+                courseId: addUserToCourseDTO.courseId,
+              },
+            });
+          } else if (data?.role === Role.STUDENT) {
+            await this.prisma.courseStudent.create({
+              data: {
+                username: username,
+                courseId: addUserToCourseDTO.courseId,
+              },
+            });
+          }
+        }),
       );
-      return user;
-    } catch (error) {
-      throw new Error('Error Add Student To Course');
-    }
+      return true;
+    } catch (error) {}
   }
 
-  async addTeacherToCourse(addUserToCourseDTO: AddUserToCourseDTO) {
+  async deleteUserFromCourse(
+    courseId: string,
+    username: string,
+    user: IRequest,
+  ) {
     try {
-      const user = await this.courseTeacherService.addTeacherToCourse(
-        addUserToCourseDTO.username,
-        addUserToCourseDTO.courseId,
+      const validUser = await this.prisma.course.findFirst({
+        include: {
+          courseTeacher: true,
+          courseStudent: true,
+        },
+        where: {
+          courseId: courseId,
+        },
+      });
+
+      const student = validUser?.courseStudent.find(
+        (user) => user.username === username,
       );
-      return user;
-    } catch (error) {
-      throw new Error('Error Add Student To Course');
-    }
-  }
+      const teacher = validUser?.courseTeacher.find(
+        (user) => user.username === username,
+      );
 
-  async deleteUserFromCourse(courseUserId: string, username: string) {
-    try {
-      const invalidCourseStudent =
-        await this.courseStudentService.getCourseStudentById(courseUserId);
-      const invalidCourseTeacher =
-        await this.courseTeacherService.getCourseTeacherById(courseUserId);
-
-      if (!invalidCourseTeacher && !invalidCourseStudent) {
+      if (!student && !teacher) {
         return 'User Not Found In Course';
       }
-
-      if (invalidCourseStudent) {
-        const deleteStudent =
-          await this.courseStudentService.deleteStudentFromCourse(courseUserId);
+      if (student) {
+        const deleteStudent = await this.prisma.courseStudent.delete({
+          where: {
+            courseStudentId: student.courseStudentId,
+          },
+        });
         return deleteStudent;
-      } else if (invalidCourseTeacher) {
-        if (invalidCourseTeacher.username === username) {
+      } else if (teacher) {
+        if (teacher.username === user.user.username) {
           return 'Can Not Delete Your Self From Course';
         }
-        const deleteTeacher =
-          await this.courseTeacherService.deletTeacherFromCourse(courseUserId);
+        const deleteTeacher = await this.prisma.courseTeacher.delete({
+          where: {
+            courseTeachertId: teacher.courseTeachertId,
+          },
+        });
         return deleteTeacher;
       }
     } catch (error) {

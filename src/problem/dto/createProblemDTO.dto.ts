@@ -1,9 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ConstraintType, LanguageType } from '@prisma/client';
 
-export class CreateProblemDTO {
+class TestCase {
   @ApiProperty()
-  assignmentId: string;
+  input: string;
 
+  @ApiProperty()
+  output: string;
+
+  @ApiProperty()
+  isHidden: boolean;
+}
+
+class Constraint {
+  @ApiProperty({ enum: ['FUNCTION', 'METHOD', 'CLASS'] })
+  type: ConstraintType;
+
+  @ApiProperty()
+  keyword: string;
+
+  @ApiProperty()
+  quantities: number;
+}
+
+class Problem {
   @ApiProperty()
   title: string;
 
@@ -13,6 +33,9 @@ export class CreateProblemDTO {
   @ApiProperty()
   hint: string;
 
+  @ApiProperty({ enum: ['C', "CPP'", 'JAVA', 'PYTHON'] })
+  language: LanguageType;
+
   @ApiProperty()
   revaleCode: string;
 
@@ -21,4 +44,18 @@ export class CreateProblemDTO {
 
   @ApiProperty()
   score: number;
+
+  @ApiProperty({ type: TestCase, isArray: true })
+  testcase: TestCase[];
+
+  @ApiProperty({ type: Constraint, isArray: true })
+  constraint: Constraint[];
+}
+
+export class CreateProblemDTO {
+  @ApiProperty()
+  assignmentId: string;
+
+  @ApiProperty({ type: Problem, isArray: true })
+  problem: Problem[];
 }

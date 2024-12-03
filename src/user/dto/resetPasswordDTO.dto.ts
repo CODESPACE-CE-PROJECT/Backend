@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class FetchSubmissionDTO {
+export class ResetPasswordDTO {
   @ApiProperty()
-  username: string;
+  password: string;
 
   @ApiProperty()
-  problemId: string;
+  confirmPassword: string;
 }

@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateReplyDTO {
   @ApiProperty()
-  message: string;
+  courseAnnounceId: string;
 
   @ApiProperty()
-  courseAnnounceId: string;
+  message: string;
 }

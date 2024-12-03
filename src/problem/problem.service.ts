@@ -7,23 +7,6 @@ import { UpdateProblemDTO } from './dto/updateProblemDTO.dto';
 export class ProblemService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProblemByAssignmentId(assignmentId: string) {
-    try {
-      const problem = await this.prisma.problem.findMany({
-        where: {
-          assignmentId: assignmentId,
-        },
-        include: {
-          testCases: true,
-          constraint: true,
-        },
-      });
-      return problem;
-    } catch (error) {
-      throw new Error('Error Fetch Problem');
-    }
-  }
-
   async getProblemById(id: string) {
     try {
       const problem = await this.prisma.problem.findUnique({
@@ -31,6 +14,16 @@ export class ProblemService {
           problemId: id,
         },
         include: {
+          assignment: {
+            select: {
+              course: {
+                select: {
+                  courseTeacher: true,
+                  courseStudent: true,
+                },
+              },
+            },
+          },
           testCases: true,
           constraint: true,
         },
@@ -41,22 +34,71 @@ export class ProblemService {
     }
   }
 
-  async createProblemByAssignmentId(createProblemDTO: CreateProblemDTO) {
+  async countProblemByAssignmentId(assignmentId: string) {
     try {
-      const problem = await this.prisma.problem.create({
-        data: {
-          title: createProblemDTO.title,
-          description: createProblemDTO.description,
-          hint: createProblemDTO.hint,
-          revaleCode: createProblemDTO.revaleCode,
-          isRegex:
-            createProblemDTO.isRegex.toString() === 'true' ||
-            createProblemDTO.isRegex === true,
-          assignmentId: createProblemDTO.assignmentId,
-          score: parseInt(createProblemDTO.score.toString(), 10),
+      const count = await this.prisma.problem.count({
+        where: {
+          assignmentId: assignmentId,
         },
       });
-      return problem;
+      return count;
+    } catch (error) {
+      throw new Error('Error Fetch Count Problem');
+    }
+  }
+
+  async getTestCaseAndConstraintByProblemId(id: string) {
+    try {
+      const testcase = await this.prisma.problem.findFirst({
+        where: {
+          problemId: id,
+        },
+        select: {
+          testCases: true,
+          constraint: true,
+        },
+      });
+      return testcase;
+    } catch (error) {
+      throw new Error('Error Fetch Test Case');
+    }
+  }
+
+  async createProblemByAssignmentId(createProblemDTO: CreateProblemDTO) {
+    try {
+      const problems = await Promise.all(
+        createProblemDTO.problem.map(async (problem) => {
+          const resultProblem = await this.prisma.problem.create({
+            include: {
+              testCases: true,
+              constraint: true,
+            },
+            data: {
+              title: problem.title,
+              description: problem.description,
+              hint: problem.hint,
+              revaleCode: problem.revaleCode,
+              isRegex: problem.isRegex,
+              assignmentId: createProblemDTO.assignmentId,
+              language: problem.language,
+              score: problem.score,
+              testCases: {
+                createMany: {
+                  data: problem.testcase,
+                },
+              },
+              constraint: {
+                createMany: {
+                  data: problem.constraint,
+                },
+              },
+            },
+          });
+          return resultProblem;
+        }),
+      );
+
+      return problems;
     } catch (error) {
       throw new Error('Error Create Problem');
     }
@@ -65,6 +107,10 @@ export class ProblemService {
   async updateProblemById(id: string, updateProblemDTO: UpdateProblemDTO) {
     try {
       const problem = await this.prisma.problem.update({
+        include: {
+          testCases: true,
+          constraint: true,
+        },
         where: {
           problemId: id,
         },
@@ -73,10 +119,20 @@ export class ProblemService {
           description: updateProblemDTO.description,
           hint: updateProblemDTO.hint,
           revaleCode: updateProblemDTO.revaleCode,
-          isRegex:
-            updateProblemDTO.isRegex.toString() === 'true' ||
-            updateProblemDTO.isRegex === true,
-          score: parseInt(updateProblemDTO.score.toString(), 10),
+          isRegex: updateProblemDTO.isRegex,
+          score: updateProblemDTO.score,
+          testCases: {
+            deleteMany: {},
+            createMany: {
+              data: updateProblemDTO.testcase,
+            },
+          },
+          constraint: {
+            deleteMany: {},
+            createMany: {
+              data: updateProblemDTO.constraint,
+            },
+          },
         },
       });
       return problem;

@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class AddDateAssignmentDTO {
+export class UpdateRealTimeDTO {
   @ApiProperty()
-  startAt: Date;
+  isActive: boolean;
 
   @ApiProperty()
-  expireAt: Date;
+  ipAddress: string;
 }
