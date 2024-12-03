@@ -42,4 +42,4 @@ COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/node_modules ./node
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/dist ./dist
 COPY --chown=root:root --chmod=755 --from=build /usr/src/app/prisma ./prisma
 
-CMD [ "node", "dist/main.js" ]
+CMD [ "node", "dist/src/main" ]
