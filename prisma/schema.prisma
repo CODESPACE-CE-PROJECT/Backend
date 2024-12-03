@@ -37,32 +37,33 @@ model Permission {
 }
 
 model Users {
-  username       String           @id
-  email          String?
-  hashedPassword String
-  studentNo      String?
-  firstName      String
-  lastName       String
-  gender         Gender
-  role           Role             @default(STUDENT)
-  pictureUrl     String?
-  IpAddress      String?
-  isActived      Boolean          @default(false)
-  allowLogin     Boolean          @default(true)
-  isEnable       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  schoolId       String
-  codeSpace      CodeSpace[]
-  course         Course[]
-  courseAnnounce CourseAnnounce[]
-  courseStudent  CourseStudent[]
-  courseTeacher  CourseTeacher[]
-  replyAnnounce  ReplyAnnounce[]
-  submission     Submission[]
-  school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
-  notification   Notification[]
+  username            String             @id
+  email               String?
+  hashedPassword      String
+  studentNo           String?
+  firstName           String
+  lastName            String
+  gender              Gender
+  role                Role               @default(STUDENT)
+  pictureUrl          String?
+  IpAddress           String?
+  isActived           Boolean            @default(false)
+  allowLogin          Boolean            @default(true)
+  isEnable            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  schoolId            String
+  codeSpace           CodeSpace[]
+  course              Course[]
+  courseAnnounce      CourseAnnounce[]
+  courseStudent       CourseStudent[]
+  courseTeacher       CourseTeacher[]
+  replyAnnounce       ReplyAnnounce[]
+  submission          Submission[]
+  school              School             @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
+  notification        Notification[]
   closedNotifications UserNotification[]
+  assignment          Assignment[]
 }
 
 model CodeSpace {
@@ -133,6 +134,7 @@ model CourseTeacher {
 
 model Assignment {
   assignmentId String                 @id @default(uuid())
+  username     String
   title        String
   type         AssignmentType
   isLock       Boolean
@@ -144,6 +146,7 @@ model Assignment {
   updatedAt    DateTime               @updatedAt
   courseId     String
   course       Course                 @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  user         Users                  @relation(fields: [username], references: [username], onDelete: Cascade)
   problem      Problem[]
 }
 
@@ -188,34 +191,35 @@ model Submission {
 }
 
 model Constraint {
-  constraintId String  @id @default(uuid())
-  type         ConstraintType 
+  constraintId String         @id @default(uuid())
+  type         ConstraintType
   keyword      String
   quantities   Int
   problemId    String
-  problem      Problem @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
+  problem      Problem        @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
 }
 
 model Notification {
-  notificationId String           @id @default(uuid())
+  notificationId String             @id @default(uuid())
   from           String
-  sender         Users            @relation(fields: [from], references: [username], onDelete: Cascade)
+  sender         Users              @relation(fields: [from], references: [username], onDelete: Cascade)
   courseId       String
-  course         Course?          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  course         Course?            @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   type           NotificationType
-  detail         String            
-  createdAt      DateTime         @default(now())
-  closedBy       UserNotification[] 
+  detail         String
+  createdAt      DateTime           @default(now())
+  closedBy       UserNotification[]
 }
 
 model UserNotification {
-  UserNotificationId             String              @id @default(uuid())
-  userId                         String
-  notificationId                 String
-  isClose                        Boolean          @default(false)
-  user                           Users            @relation(fields: [userId], references: [username], onDelete: Cascade)
-  notification                   Notification     @relation(fields: [notificationId], references: [notificationId], onDelete: Cascade)
-  @@unique([userId, notificationId]) 
+  UserNotificationId String       @id @default(uuid())
+  userId             String
+  notificationId     String
+  isClose            Boolean      @default(false)
+  user               Users        @relation(fields: [userId], references: [username], onDelete: Cascade)
+  notification       Notification @relation(fields: [notificationId], references: [notificationId], onDelete: Cascade)
+
+  @@unique([userId, notificationId])
 }
 
 enum Gender {

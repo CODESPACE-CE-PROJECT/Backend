@@ -29,6 +29,43 @@ export class AssignmentService {
     }
   }
 
+  async getAllAssignmentForCalendar(username: string) {
+    try {
+      const assignment = await this.prisma.assignment.findMany({
+        where: {
+          course: {
+            OR: [
+              {
+                courseStudent: {
+                  some: {
+                    username: username,
+                  },
+                },
+              },
+              {
+                courseTeacher: {
+                  some: {
+                    username: username,
+                  },
+                },
+              },
+            ],
+          },
+        },
+        select: {
+          assignmentId: true,
+          title: true,
+          startAt: true,
+          expireAt: true,
+        },
+      });
+
+      return assignment;
+    } catch (error) {
+      throw new Error('Error Fetch Assignment For Calendar');
+    }
+  }
+
   async checkTitleExistByCourseId(courseId: string, title: string) {
     try {
       const isExist = await this.prisma.assignment.findFirst({
@@ -76,10 +113,14 @@ export class AssignmentService {
     }
   }
 
-  async createAssignmentByCourseId(createAssignmentDTO: CreateAssigmentDTO) {
+  async createAssignmentByCourseId(
+    createAssignmentDTO: CreateAssigmentDTO,
+    username: string,
+  ) {
     try {
       const assignment = await this.prisma.assignment.create({
         data: {
+          username: username,
           title: createAssignmentDTO.title,
           type: createAssignmentDTO.type,
           courseId: createAssignmentDTO.courseId,

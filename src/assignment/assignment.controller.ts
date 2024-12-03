@@ -148,6 +148,30 @@ export class AssignmentController {
   }
 
   @ApiOperation({
+    summary:
+      'Get All Assignment For Calendar By Username Yourself (Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get('calendar/info')
+  async getAllAssignmentForCalendar(@Request() req: IRequest) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.TEACHER,
+      Role.STUDENT,
+    ]);
+
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+    const assignment = await this.assignmentService.getAllAssignmentForCalendar(
+      req.user.username,
+    );
+    return {
+      message: 'Successfully Get Assignment',
+      data: assignment,
+    };
+  }
+
+  @ApiOperation({
     summary: 'Get All People Score Assignment By Course Id (Teacher)',
   })
   @UseGuards(JwtAuthGuard)
@@ -278,10 +302,10 @@ export class AssignmentController {
       );
     }
 
-    const assignment =
-      await this.assignmentService.createAssignmentByCourseId(
-        createAssignmentDTO,
-      );
+    const assignment = await this.assignmentService.createAssignmentByCourseId(
+      createAssignmentDTO,
+      req.user.username,
+    );
 
     return {
       message: 'Create Assignment Successfully',
@@ -293,7 +317,7 @@ export class AssignmentController {
     summary: 'Update Lock Assignment By Id (Teacher)',
   })
   @UseGuards(JwtAuthGuard)
-  @Get(':id/:lock')
+  @Patch(':id/:lock')
   async updatStatusAssignmentById(
     @Request() req: IRequest,
     @Param('id', ParseUUIDPipe) id: string,
