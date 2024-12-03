@@ -16,7 +16,7 @@ export class SchoolService {
       let imageUrl = null;
       if (createSchoolDTO.picture) {
         imageUrl = await this.minio.uploadImage(
-          'profile',
+          'school',
           createSchoolDTO.picture,
           '',
         );
@@ -60,6 +60,7 @@ export class SchoolService {
       });
       return school;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Create School');
     }
   }

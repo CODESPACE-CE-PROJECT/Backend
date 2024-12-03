@@ -50,6 +50,7 @@ export class MinioClientService {
         imageUrl: `https://${this.configService.get('MINIO_ENDPOINT')}/${minioBucket}/${fileName}`,
       };
     } catch (error) {
+      console.log(error);
       throw new Error(error);
     }
   }
