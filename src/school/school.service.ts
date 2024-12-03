@@ -60,7 +60,6 @@ export class SchoolService {
       });
       return school;
     } catch (error) {
-      console.log(error);
       throw new Error('Error Create School');
     }
   }
