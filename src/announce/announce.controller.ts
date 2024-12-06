@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { AnnounceService } from './announce.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { CreateAnnounceDTO } from './dto/createAnnounce.dto';
 import { Role } from '@prisma/client';
@@ -24,7 +23,6 @@ import { UpdateReplyDTO } from 'src/reply/dto/updateReply.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UtilsService } from 'src/utils/utils.service';
 import { CourseService } from 'src/course/course.service';
-import { join } from 'path';
 
 @ApiBearerAuth()
 @ApiTags('Announcement')

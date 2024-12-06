@@ -1,4 +1,4 @@
-FROM node:20-alpine AS development
+FROM node:23.3.0-alpine AS development
 
 WORKDIR /usr/src/app
 
@@ -16,7 +16,7 @@ COPY prisma ./prisma
 
 RUN yarn prisma generate
 
-FROM node:18-alpine AS Build
+FROM node:23.3.0-alpine AS Build
 
 WORKDIR /usr/src/app
 
@@ -36,7 +36,7 @@ RUN yarn install --frozen-lockfile
 
 RUN yarn prisma generate
 
-FROM node:18-alpine AS production
+FROM node:23.3.0-alpine AS production
 
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/node_modules ./node_modules
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/dist ./dist

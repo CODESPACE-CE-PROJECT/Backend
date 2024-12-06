@@ -266,6 +266,8 @@ export class CourseController {
     const updatedCourse = await this.courseService.updateCourseById(
       updateCourseDTO,
       id,
+      req.user.username,
+      course.title,
     );
     return {
       message: 'Successfully Update Course',

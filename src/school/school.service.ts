@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSchoolDTO } from './dto/createSchool.dto';
 import { UpdateSchoolDTO } from './dto/updateSchool.dto';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class SchoolService {
@@ -69,9 +70,30 @@ export class SchoolService {
       const schools = await this.prisma.school.findMany({
         include: {
           permission: true,
+          users: true,
         },
       });
-      return schools;
+      const updateSchool = schools.map((school) => {
+        const teacherCount = school.users.filter(
+          (user) => user.role === Role.TEACHER,
+        );
+        const studentCount = school.users.filter(
+          (user) => user.role === Role.STUDENT,
+        );
+
+        if (school) {
+          Reflect.deleteProperty(school, 'users');
+        }
+
+        return {
+          ...school,
+          count: {
+            student: studentCount.length,
+            teacher: teacherCount.length,
+          },
+        };
+      });
+      return updateSchool;
     } catch (error) {
       throw new Error('Error Fetch School');
     }
@@ -101,11 +123,40 @@ export class SchoolService {
         },
         include: {
           permission: true,
+          users: {
+            omit: {
+              hashedPassword: true,
+            },
+          },
         },
       });
       return school;
     } catch (error) {
       throw new Error('Error Fetch School');
+    }
+  }
+
+  async getDisableSchoolAndUser() {
+    try {
+      const school = await this.prisma.school.findMany({
+        where: {
+          isEnable: false,
+        },
+      });
+      const user = await this.prisma.users.findMany({
+        where: {
+          isEnable: false,
+          school: {
+            isEnable: true,
+          },
+        },
+      });
+      return {
+        school: school,
+        user: user,
+      };
+    } catch (error) {
+      throw new Error('Error Fetch Data');
     }
   }
 
@@ -167,7 +218,10 @@ export class SchoolService {
           district: updateSchoolDTO.district,
           province: updateSchoolDTO.province,
           postCode: updateSchoolDTO.postCode,
-          isEnable: updateSchoolDTO.isEnable.toString() === 'true',
+          isEnable:
+            typeof updateSchoolDTO.isEnable === 'string'
+              ? updateSchoolDTO.isEnable === 'true'
+              : updateSchoolDTO.isEnable,
           permission: {
             update: {
               maxCreateTeacher: parseInt(
@@ -191,6 +245,17 @@ export class SchoolService {
           },
         },
       });
+
+      if (updateSchoolDTO.isEnable.toString() === 'false')
+        await this.prisma.users.updateMany({
+          where: {
+            schoolId: id,
+          },
+          data: {
+            isEnable: false,
+          },
+        });
+
       return school;
     } catch (error) {
       throw new Error('Error Update School');

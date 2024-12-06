@@ -12,6 +12,9 @@ export class CreateAssigmentDTO {
   type: AssignmentType;
 
   @ApiProperty()
+  announceDate: Date;
+
+  @ApiProperty()
   startAt: Date;
 
   @ApiProperty()

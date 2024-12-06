@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCourseDTO } from './dto/createCourse.dto';
 import { UpdateCourseDTO } from './dto/updateCourse.dto';
-import { AnnounceAssignmentType, Role } from '@prisma/client';
+import { AnnounceAssignmentType, NotificationType, Role } from '@prisma/client';
 import { AddUserToCourseDTO } from './dto/addUserToCourse.dto';
 import { MinioClientService } from 'src/minio-client/minio-client.service';
 import { UserService } from 'src/user/user.service';
 import { IRequest } from 'src/auth/interface/request.interface';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class CourseService {
@@ -14,6 +15,7 @@ export class CourseService {
     private readonly prisma: PrismaService,
     private readonly minio: MinioClientService,
     private readonly userService: UserService,
+    private notificationServie: NotificationService,
   ) {}
 
   async getAllCourse() {
@@ -244,7 +246,12 @@ export class CourseService {
     }
   }
 
-  async updateCourseById(updateCourseDTO: UpdateCourseDTO, courseId: string) {
+  async updateCourseById(
+    updateCourseDTO: UpdateCourseDTO,
+    courseId: string,
+    username: string,
+    oldTitle: string,
+  ) {
     try {
       let imageUrl = null;
       if (updateCourseDTO.picture) {
@@ -263,6 +270,20 @@ export class CourseService {
           description: updateCourseDTO.description,
         },
       });
+
+      await this.notificationServie.createNotification(
+        username,
+        course.courseId,
+        NotificationType.ACTION,
+        course.title + ' update course',
+      );
+
+      await this.notificationServie.updateNotification(
+        course.courseId,
+        oldTitle,
+        course.title,
+      );
+
       return course;
     } catch (error) {
       throw new Error('Can Not Update Course');
