@@ -57,6 +57,25 @@ export class SchoolController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Disable School And User(Admin)' })
+  @Get('bin')
+  async getDisableSchoolAndUser(@Request() req: IRequest) {
+    const resultPermit = await this.utilsService.checkPermissionRole(req, [
+      Role.ADMIN,
+    ]);
+    if (resultPermit) {
+      throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    const disabledData = await this.schoolService.getDisableSchoolAndUser();
+
+    return {
+      message: 'Successfully Get Disable School And Student',
+      data: disabledData,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get School By Id (Admin)' })
   @Get(':id')
   async getSchoolsById(
@@ -74,9 +93,22 @@ export class SchoolController {
     if (!school) {
       throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
     }
+    const teacherCount = school.users.filter(
+      (user) => user.role === Role.TEACHER,
+    );
+    const studentCount = school.users.filter(
+      (user) => user.role === Role.STUDENT,
+    );
+
     return {
-      message: 'Successfully get School',
-      data: school,
+      message: 'Successfully Get School',
+      data: {
+        ...school,
+        count: {
+          student: studentCount.length,
+          teacher: teacherCount.length,
+        },
+      },
     };
   }
 

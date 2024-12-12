@@ -390,6 +390,8 @@ export class AssignmentController {
     const assignment = await this.assignmentService.updateAssingmentById(
       updateAssignmentDTO,
       id,
+      validAssignment.title,
+      req.user.username,
     );
     return {
       message: 'Update Assignment Successfully',
@@ -429,7 +431,10 @@ export class AssignmentController {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
 
-    const assignment = await this.assignmentService.deleteAssignmentById(id);
+    const assignment = await this.assignmentService.deleteAssignmentById(
+      id,
+      req.user.username,
+    );
     return {
       message: 'Delete Assignment Successfully',
       data: assignment,

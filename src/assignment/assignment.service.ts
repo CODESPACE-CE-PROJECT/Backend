@@ -2,12 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
-import { AnnounceAssignmentType, AssignmentType } from '@prisma/client';
+import {
+  AnnounceAssignmentType,
+  AssignmentType,
+  NotificationType,
+} from '@prisma/client';
 import { Cron } from '@nestjs/schedule';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class AssignmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private notificationServie: NotificationService,
+  ) {}
 
   async getAssignmentById(id: string) {
     try {
@@ -125,20 +133,20 @@ export class AssignmentService {
           type: createAssignmentDTO.type,
           courseId: createAssignmentDTO.courseId,
           isLock: true,
-          announceType:
-            createAssignmentDTO.type === AssignmentType.EXAMONLINE ||
-            AssignmentType.EXAMONSITE
-              ? AnnounceAssignmentType.SET
-              : AnnounceAssignmentType.UNSET,
-          announceDate:
-            createAssignmentDTO.type === AssignmentType.EXAMONSITE ||
-            AssignmentType.EXAMONLINE
-              ? createAssignmentDTO.startAt
-              : '',
+          announceType: AnnounceAssignmentType.SET,
+          announceDate: createAssignmentDTO.announceDate,
           startAt: createAssignmentDTO.startAt,
           expireAt: createAssignmentDTO.expireAt,
         },
       });
+
+      await this.notificationServie.createNotification(
+        username,
+        assignment.courseId,
+        NotificationType.ACTION,
+        assignment.title + ' create assignment',
+      );
+
       return assignment;
     } catch (error) {
       throw new Error('Error Create Assignment');
@@ -148,6 +156,8 @@ export class AssignmentService {
   async updateAssingmentById(
     updateAssignmentDTO: UpdateAssignmentDTO,
     id: string,
+    oldTitle: string,
+    username: string,
   ) {
     try {
       const assignment = await this.prisma.assignment.update({
@@ -157,20 +167,25 @@ export class AssignmentService {
         data: {
           title: updateAssignmentDTO.title,
           type: updateAssignmentDTO.type,
-          announceType:
-            updateAssignmentDTO.type === AssignmentType.EXAMONLINE ||
-            AssignmentType.EXAMONSITE
-              ? AnnounceAssignmentType.SET
-              : AnnounceAssignmentType.UNSET,
-          announceDate:
-            updateAssignmentDTO.type === AssignmentType.EXAMONSITE ||
-            AssignmentType.EXAMONLINE
-              ? updateAssignmentDTO.startAt
-              : '',
+          announceDate: updateAssignmentDTO.announceDate,
           startAt: updateAssignmentDTO.startAt,
           expireAt: updateAssignmentDTO.expireAt,
         },
       });
+
+      await this.notificationServie.createNotification(
+        username,
+        assignment.courseId,
+        NotificationType.ACTION,
+        assignment.title + ' update assignment',
+      );
+
+      await this.notificationServie.updateNotification(
+        assignment.courseId,
+        oldTitle,
+        assignment.title,
+      );
+
       return assignment;
     } catch (error) {
       throw new Error('Error Update Assignment');
@@ -193,13 +208,20 @@ export class AssignmentService {
     }
   }
 
-  async deleteAssignmentById(id: string) {
+  async deleteAssignmentById(id: string, username: string) {
     try {
       const assignment = await this.prisma.assignment.delete({
         where: {
           assignmentId: id,
         },
       });
+
+      await this.notificationServie.createNotification(
+        username,
+        assignment.courseId,
+        NotificationType.ACTION,
+        assignment.title + ' delete assignment',
+      );
       return assignment;
     } catch (error) {
       throw new Error('Error Delete Assignment');
@@ -209,21 +231,15 @@ export class AssignmentService {
   @Cron('*/5 * * * * *') // This runs every 5 seconds
   async handleCourseLock() {
     try {
-      const assignments = await this.prisma.assignment.findMany({
-        select: {
-          assignmentId: true,
-          startAt: true,
-          expireAt: true,
-          announceDate: true,
-        },
-      });
+      const assignments = await this.prisma.assignment.findMany({});
 
       const currentDate = new Date();
 
       for (const assignment of assignments) {
         if (
           currentDate >= new Date(assignment.startAt) &&
-          currentDate < new Date(assignment.expireAt)
+          currentDate < new Date(assignment.expireAt) &&
+          assignment.isLock !== false
         ) {
           await this.prisma.assignment.update({
             where: { assignmentId: assignment.assignmentId },
@@ -233,7 +249,11 @@ export class AssignmentService {
           });
         }
 
-        if (currentDate >= new Date(assignment.expireAt)) {
+        if (
+          (currentDate >= new Date(assignment.expireAt) !==
+            assignment.isLock) !==
+          true
+        ) {
           await this.prisma.assignment.update({
             where: { assignmentId: assignment.assignmentId },
             data: {
@@ -241,13 +261,24 @@ export class AssignmentService {
             },
           });
         }
-        if (currentDate >= new Date(assignment.announceDate)) {
+
+        if (
+          currentDate >= new Date(assignment.announceDate) &&
+          assignment.announceType !== AnnounceAssignmentType.ANNOUNCED
+        ) {
           await this.prisma.assignment.update({
             where: { assignmentId: assignment.assignmentId },
             data: {
               announceType: AnnounceAssignmentType.ANNOUNCED,
             },
           });
+
+          await this.notificationServie.createNotification(
+            assignment.username,
+            assignment.courseId,
+            NotificationType.ANNOUNCE,
+            assignment.title,
+          );
         }
       }
     } catch (error) {

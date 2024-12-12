@@ -201,8 +201,8 @@ model Constraint {
 
 model Notification {
   notificationId String             @id @default(uuid())
-  from           String
-  sender         Users              @relation(fields: [from], references: [username], onDelete: Cascade)
+  username       String
+  user           Users              @relation(fields: [username], references: [username], onDelete: Cascade)
   courseId       String
   course         Course?            @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   type           NotificationType

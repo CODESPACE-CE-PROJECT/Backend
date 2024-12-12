@@ -13,6 +13,7 @@ import { AppController } from './app.controller';
 import { PermissionModule } from './permission/permission.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationModule } from './notification/notification.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { NotificationModule } from './notification/notification.module';
     SubmissionModule,
     CodeSpaceModule,
     NotificationModule,
+    DashboardModule,
   ],
   controllers: [AppController],
 })
