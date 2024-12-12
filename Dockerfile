@@ -1,6 +1,8 @@
-FROM node:23.3.0-alpine AS development
+FROM node:20-alpine AS development
 
 WORKDIR /usr/src/app
+
+RUN apk add --no-cache openssl
 
 COPY --chown=root:root package.json ./
 
@@ -16,9 +18,11 @@ COPY prisma ./prisma
 
 RUN yarn prisma generate
 
-FROM node:23.3.0-alpine AS Build
+FROM node:20-alpine AS Build
 
 WORKDIR /usr/src/app
+
+RUN apk add --no-cache openssl
 
 COPY --chown=root:root --chmod=755 package.json ./
 
@@ -36,7 +40,9 @@ RUN yarn install --frozen-lockfile
 
 RUN yarn prisma generate
 
-FROM node:23.3.0-alpine AS production
+FROM node:20-alpine AS production
+
+RUN apk add --no-cache openssl
 
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/node_modules ./node_modules
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/dist ./dist
