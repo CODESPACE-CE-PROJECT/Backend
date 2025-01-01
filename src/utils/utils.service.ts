@@ -17,4 +17,9 @@ export class UtilsService {
       throw new Error('Error Check Permission Role');
     }
   }
+
+  async generatePassword() {
+    try {
+    } catch (error) {}
+  }
 }
