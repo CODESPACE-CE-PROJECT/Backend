@@ -19,6 +19,7 @@ export class MailerService {
         context: { name: name, username: username, password: password },
       });
     } catch (error) {
+      console.log(error);
       throw new Error('Error Send Create Account Mail');
     }
   }
@@ -37,6 +38,7 @@ export class MailerService {
         context: { name: name, username: username, password: password },
       });
     } catch (error) {
+      console.log(error);
       throw new Error('Error Send Reset Password Mail');
     }
   }
