@@ -7,6 +7,8 @@ import { JwtService } from '@nestjs/jwt';
 import { IResponseGoogle } from './interface/response-google.inteface.ts';
 import { ConfigService } from '@nestjs/config';
 import { IPayload } from './interface/payload.interface';
+import { UtilsService } from 'src/utils/utils.service';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +16,8 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private utilService: UtilsService,
+    private mailerService: MailerService,
   ) {}
 
   async validateUser(loginDTO: LoginDTO) {
@@ -55,9 +59,28 @@ export class AuthService {
     };
   }
 
-  async forgotPassword(email: string) {
+  async forgotPassword(
+    email: string,
+    username: string,
+    firstname: string,
+    lastname: string,
+  ) {
     try {
-    } catch (error) {}
+      const newPassword = await this.utilService.generatePassword();
+      const resetPasswordDTO = {
+        password: newPassword,
+        confirmPassword: newPassword,
+      };
+      await this.userService.resetPasswordProfile(username, resetPasswordDTO);
+      await this.mailerService.sendForgotPasswordEmail(
+        email,
+        `${firstname} ${lastname}`,
+        username,
+        newPassword,
+      );
+    } catch (error) {
+      throw new Error('Error Send Forgot Password Mail');
+    }
   }
 
   async googleLogin(responseGoogle: IResponseGoogle) {

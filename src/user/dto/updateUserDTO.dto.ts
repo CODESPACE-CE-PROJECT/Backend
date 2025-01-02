@@ -13,9 +13,6 @@ export class UpdateUserDTO {
   @ApiProperty()
   studentNo: string;
 
-  @ApiProperty()
-  password: string;
-
   @ApiProperty({ enum: ['MALE', 'FEMALE', 'OTHER'] })
   gender: Gender;
 

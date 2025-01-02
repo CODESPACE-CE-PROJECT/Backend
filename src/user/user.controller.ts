@@ -234,6 +234,7 @@ export class UserController {
       sheetData.forEach((user: IFileFormat, rowIndex) => {
         const rowErrors: string[] = [];
 
+        if (!user.studentId) rowErrors.push('student ID is required');
         if (!user.firstname) rowErrors.push('firstname is required');
         if (!user.lastname) rowErrors.push('lastname is required');
         if (!user.gender || !['male', 'female', 'other'].includes(user.gender))
@@ -421,7 +422,7 @@ export class UserController {
   @UseInterceptors(FileInterceptor('picture'))
   @ApiConsumes('multipart/form-data', 'application/json')
   @Patch('username/:username')
-  async updateUserById(
+  async updateUserByUsername(
     @Request() req: IRequest,
     @Param('username') username: string,
     @Body() updateUserDTO: UpdateUserDTO,

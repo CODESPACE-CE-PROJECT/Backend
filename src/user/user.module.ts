@@ -6,9 +6,11 @@ import { SchoolModule } from 'src/school/school.module';
 import { MinioClientModule } from 'src/minio-client/minio-client.module';
 import { ConfigModule } from '@nestjs/config';
 import { UtilsModule } from 'src/utils/utils.module';
+import { MailerModule } from 'src/mailer/mailer.module';
 
 @Module({
   imports: [
+    MailerModule,
     PrismaModule,
     SchoolModule,
     MinioClientModule,

@@ -25,6 +25,8 @@ import { JwtRefreshAuthGuard } from './refresh-auth.guard';
 import { IPayload } from './interface/payload.interface';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ForgotPasswordDTO } from './dto/forgotPasswordDTO.dto';
+import { UserService } from 'src/user/user.service';
+import { exhaustMap } from 'rxjs';
 
 @ApiTags('Authenication')
 @Controller('auth')
@@ -32,6 +34,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
@@ -51,6 +54,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Forgot Password (Student, Teacher, Admin)' })
   @Post('forgot-password')
   async forgoPassword(@Body() forgotPasswordDTO: ForgotPasswordDTO) {
+    const invalidUser = await this.userService.getUserByEmail(
+      forgotPasswordDTO.email,
+    );
+
+    if (!invalidUser) {
+      throw new HttpException('Email Not Found', HttpStatus.NOT_FOUND);
+    }
+    await this.authService.forgotPassword(
+      forgotPasswordDTO.email,
+      invalidUser.username,
+      invalidUser.firstName,
+      invalidUser.lastName,
+    );
     return {
       message: 'Successfully Send Mail',
     };

@@ -1,4 +1,9 @@
 ---
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true
 volumes:
   db-data:
   minio-data:
@@ -14,14 +19,17 @@ services:
       POSTGRES_PASSWORD: root
       PGDATA: /var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - '5432:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U"]
+      test: ['CMD-SHELL', 'pg_isready -U']
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - backend
+      - frontend
   minio:
-    container_name: minio 
+    container_name: minio
     image: minio/minio:RELEASE.2024-08-03T04-33-23Z-cpuv1
     restart: unless-stopped
     ports:
@@ -33,4 +41,7 @@ services:
     volumes:
       - minio-data:/data
     command: server --console-address ":9001" /data
-    
+    networks:
+      - backend
+      - frontend
+
