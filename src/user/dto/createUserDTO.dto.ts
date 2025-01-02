@@ -9,9 +9,6 @@ class Users {
   email: string;
 
   @ApiProperty()
-  password: string;
-
-  @ApiProperty()
   studentNo: string;
 
   @ApiProperty()

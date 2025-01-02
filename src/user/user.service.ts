@@ -8,12 +8,16 @@ import { UpdateProfileDTO } from './dto/upadteProfile.dto';
 import { UpdateUserDTO } from './dto/updateUserDTO.dto';
 import { UpdateRealTimeDTO } from './dto/updateRealTimeDTO.dto';
 import { ResetPasswordDTO } from './dto/resetPasswordDTO.dto';
+import { MailerService } from 'src/mailer/mailer.service';
+import { UtilsService } from 'src/utils/utils.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
     private readonly minio: MinioClientService,
+    private readonly mailerService: MailerService,
+    private readonly utilService: UtilsService,
   ) {}
 
   async getAllUser() {
@@ -70,17 +74,31 @@ export class UserService {
 
   async createUser(createUserDTO: CreateUserDTO) {
     try {
+      const collectUserInfo: {
+        username: string;
+        password: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+      }[] = [];
       // hashing password
       const allUser = await Promise.all(
         createUserDTO.users.map(async (user) => {
+          const password = await this.utilService.generatePassword();
+
+          collectUserInfo.push({
+            username: user.username,
+            password: password,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          });
+
           return {
             schoolId: createUserDTO.schoolId,
             username: user.username,
             email: user.email,
-            hashedPassword: await bcrypt.hash(
-              user.password,
-              await bcrypt.genSalt(),
-            ),
+            hashedPassword: await bcrypt.hash(password, await bcrypt.genSalt()),
             firstName: user.firstName,
             lastName: user.lastName,
             studentNo: user.studentNo,
@@ -96,6 +114,18 @@ export class UserService {
         },
         data: allUser,
       });
+
+      await Promise.all(
+        collectUserInfo.map(async (user) => {
+          await this.mailerService.sendWelcomeEmail(
+            user.email,
+            `${user.firstName} ${user.lastName}`,
+            user.username,
+            user.password,
+          );
+        }),
+      );
+
       return user;
     } catch (err) {
       console.log(err);
@@ -183,10 +213,6 @@ export class UserService {
           lastName: updateUserDTO.lastName,
           studentNo: updateUserDTO.studentNo,
           pictureUrl: imageUrl?.imageUrl,
-          hashedPassword: await bcrypt.hash(
-            updateUserDTO.password,
-            await bcrypt.genSalt(),
-          ),
           isEnable: updateUserDTO.isEnable,
           allowLogin: updateUserDTO.allowLogin,
         },

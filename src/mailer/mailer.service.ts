@@ -23,7 +23,7 @@ export class MailerService {
     }
   }
 
-  async sendResetPassword(
+  async sendForgotPasswordEmail(
     to: string,
     name: string,
     username: string,

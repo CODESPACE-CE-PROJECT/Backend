@@ -9,9 +9,18 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { MailerModule } from 'src/mailer/mailer.module';
+import { UtilsModule } from 'src/utils/utils.module';
 
 @Module({
-  imports: [UserModule, PassportModule, ConfigModule, JwtModule],
+  imports: [
+    UserModule,
+    PassportModule,
+    ConfigModule,
+    JwtModule,
+    MailerModule,
+    UtilsModule,
+  ],
   providers: [
     AuthService,
     JwtStrategy,

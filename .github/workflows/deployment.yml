@@ -40,6 +40,9 @@ jobs:
           MINIO_USE_SSL: ${{ secrets.MINIO_USE_SSL }}
           MINIO_ACCESSKEY: ${{ secrets.MINIO_ACCESSKEY }}
           MINIO_SECRETKEY: ${{ secrets.MINIO_SECRETKEY }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
           DOMAIN_URL: ${{ secrets.DOMAIN_URL }}
@@ -56,6 +59,9 @@ jobs:
           echo "MINIO_USE_SSL=$MINIO_USE_SSL" >> .env
           echo "MINIO_ACCESSKEY=$MINIO_ACCESSKEY" >> .env
           echo "MINIO_SECRETKEY=$MINIO_SECRETKEY" >> .env
+          echo "EMAIL_HOST=$EMAIL_HOST" >> .env 
+          echo "EMAIL_USERNAME=$EMAIL_USERNAME" >> .env
+          echo "EMAIL_PASSWORD=$EMAIL_PASSWORD" >> .env
           echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
           echo "ADMIN_PASS=$ADMIN_PASS" >> .env
           echo "DOMAIN_URL=$DOMAIN_URL" >> .env
