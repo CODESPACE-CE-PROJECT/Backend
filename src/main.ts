@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as session from 'express-session';
 import * as dotenv from 'dotenv';
+import { urlencoded } from 'express';
 
 dotenv.config();
 async function bootstrap() {
@@ -16,6 +18,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
   app.use(cookieParser());
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
   app.enableCors({
     credentials: true,
   });
