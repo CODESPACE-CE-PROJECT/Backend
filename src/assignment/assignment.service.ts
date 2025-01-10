@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
-import {
-  AnnounceAssignmentType,
-  AssignmentType,
-  NotificationType,
-} from '@prisma/client';
+import { AnnounceAssignmentType, NotificationType } from '@prisma/client';
 import { Cron } from '@nestjs/schedule';
 import { NotificationService } from 'src/notification/notification.service';
 

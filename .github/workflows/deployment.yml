@@ -47,6 +47,7 @@ jobs:
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
           DOMAIN_URL: ${{ secrets.DOMAIN_URL }}
           PROBLEM_LIMIT: ${{ secrets.PROBLEM_LIMIT }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
         run: |
           echo "DATABASE_URL=$DATABASE_URL" >> .env
           echo "JWT_SECRET=$JWT_SECRET" >> .env
@@ -66,6 +67,7 @@ jobs:
           echo "ADMIN_PASS=$ADMIN_PASS" >> .env
           echo "DOMAIN_URL=$DOMAIN_URL" >> .env
           echo "PROBLEM_LIMIT=$PROBLEM_LIMIT" >> .env
+          echo "FRONTEND_URL=$FRONTEND_URL" >> .env
 
       - name: Clear Cache 🫧
         run: |
