@@ -139,7 +139,7 @@ export class NotificationService {
     try {
       const userNotification = await this.prisma.userNotification.create({
         data: {
-          userId: username,
+          username: username,
           notificationId,
           isClose: true,
         },
