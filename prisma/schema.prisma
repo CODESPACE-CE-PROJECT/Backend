@@ -11,14 +11,14 @@ datasource db {
 model School {
   schoolId    String      @id @default(uuid())
   schoolName  String
-  address     String?
-  district    String?
-  isEnable    Boolean     @default(true)
-  package     PackageType
   pictureUrl  String?
-  postCode    String?
-  province    String?
+  package     PackageType
+  isEnable    Boolean     @default(true)
+  address     String?
   subDistrict String?
+  district    String?
+  province    String?
+  postCode    String?
   updatedAt   DateTime    @updatedAt @db.Timestamp(6)
   createdAt   DateTime    @default(now()) @db.Timestamp(6)
   courses     Course[]
@@ -47,21 +47,21 @@ model Users {
   lastName            String
   gender              Gender
   role                Role               @default(STUDENT)
+  pictureUrl          String?
   IpAddress           String?
   isActived           Boolean            @default(false)
+  allowLogin          Boolean            @default(true)
+  isEnable            Boolean            @default(true)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   schoolId            String
-  allowLogin          Boolean            @default(true)
-  isEnable            Boolean            @default(true)
-  pictureUrl          String?
   assignment          Assignment[]
   codeSpace           CodeSpace[]
   course              Course[]
   courseAnnounce      CourseAnnounce[]
   courseStudent       CourseStudent[]
   courseTeacher       CourseTeacher[]
-  notification        Notification[]
+  Notification        Notification[]
   replyAnnounce       ReplyAnnounce[]
   submission          Submission[]
   closedNotifications UserNotification[]
@@ -81,11 +81,11 @@ model Course {
   courseId       String           @id @default(uuid())
   title          String
   description    String?
+  backgroundUrl  String?
   username       String
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   schoolId       String
-  backgroundUrl  String?
   assignment     Assignment[]
   school         School           @relation(fields: [schoolId], references: [schoolId], onDelete: Cascade)
   user           Users            @relation(fields: [username], references: [username], onDelete: Cascade)
@@ -97,8 +97,8 @@ model Course {
 
 model CourseAnnounce {
   courseAnnounceId String          @id @default(uuid())
-  description      String
   username         String
+  description      String
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   courseId         String
@@ -111,9 +111,9 @@ model ReplyAnnounce {
   replyAnnounceId  String         @id @default(uuid())
   message          String
   username         String
-  courseAnnounceId String
   createAt         DateTime       @default(now())
   updateAt         DateTime       @updatedAt
+  courseAnnounceId String
   courseAnnounce   CourseAnnounce @relation(fields: [courseAnnounceId], references: [courseAnnounceId], onDelete: Cascade)
   user             Users          @relation(fields: [username], references: [username], onDelete: Cascade)
 }
@@ -136,17 +136,17 @@ model CourseTeacher {
 
 model Assignment {
   assignmentId String                 @id @default(uuid())
+  username     String
   title        String
-  isLock       Boolean
   type         AssignmentType
+  isLock       Boolean
   startAt      DateTime
   expireAt     DateTime
+  announceType AnnounceAssignmentType @default(UNSET)
+  announceDate DateTime               @default(now())
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   courseId     String
-  announceDate DateTime               @default(now())
-  announceType AnnounceAssignmentType @default(UNSET)
-  username     String
   course       Course                 @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
   user         Users                  @relation(fields: [username], references: [username], onDelete: Cascade)
   problem      Problem[]
@@ -157,13 +157,13 @@ model Problem {
   title        String
   description  String
   hint         String?
+  language     LanguageType @default(PYTHON)
   revaleCode   String?
   score        Int
   isRegex      Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   assignmentId String
-  language     LanguageType @default(PYTHON)
   constraint   Constraint[]
   assignment   Assignment   @relation(fields: [assignmentId], references: [assignmentId], onDelete: Cascade)
   submission   Submission[]
@@ -181,35 +181,35 @@ model TestCase {
 
 model Submission {
   submissionId    String          @id @default(uuid())
-  sourceCode      String
-  createdAt       DateTime        @default(now())
   problemId       String
-  no              Int
-  stateSubmission StateSubmission
   username        String
+  sourceCode      String
+  no              Int
   result          Json?           @db.Json
+  stateSubmission StateSubmission
+  createdAt       DateTime        @default(now())
   problem         Problem         @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
   user            Users           @relation(fields: [username], references: [username], onDelete: Cascade)
 }
 
 model Constraint {
   constraintId String         @id @default(uuid())
+  type         ConstraintType
   keyword      String
   quantities   Int
   problemId    String
-  type         ConstraintType
   problem      Problem        @relation(fields: [problemId], references: [problemId], onDelete: Cascade)
 }
 
 model Notification {
   notificationId String             @id @default(uuid())
+  username       String
   courseId       String
   type           NotificationType
   detail         String
   createdAt      DateTime           @default(now())
-  username       String
   course         Course             @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  user           Users              @relation(fields: [username], references: [username], onDelete: Cascade)
+  Users          Users              @relation(fields: [username], references: [username], onDelete: Cascade, map: "Notification_from_fkey")
   closedBy       UserNotification[]
 }
 
@@ -268,8 +268,8 @@ enum StateSubmission {
 
 enum NotificationType {
   ACTION
-  ANNOUNCE
   GENERAL
+  ANNOUNCE
 }
 
 enum ConstraintType {

@@ -43,6 +43,7 @@ export class UserService {
           school: {
             select: {
               schoolName: true,
+              package: true,
             },
           },
         },

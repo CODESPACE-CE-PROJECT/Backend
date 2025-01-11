@@ -26,7 +26,6 @@ import { IPayload } from './interface/payload.interface';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ForgotPasswordDTO } from './dto/forgotPasswordDTO.dto';
 import { UserService } from 'src/user/user.service';
-import { exhaustMap } from 'rxjs';
 
 @ApiTags('Authenication')
 @Controller('auth')
@@ -40,10 +39,31 @@ export class AuthController {
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: IRequest, @Body() _loginDTO: LoginDTO) {
+  async login(
+    @Request() req: IRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Body() _loginDTO: LoginDTO,
+  ) {
     const { accessToken, refreshToken } = await this.authService.login(
       req.user,
     );
+
+    const host = req.get('host')?.split(':')[0];
+
+    res.cookie('accessToken', accessToken, {
+      domain: host,
+      path: '/',
+      httpOnly: true,
+      maxAge: 3600000,
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      domain: host,
+      path: '/',
+      httpOnly: true,
+      maxAge: 3600000,
+    });
+
     return {
       message: 'Successfully Logged In',
       accessToken: accessToken,
@@ -104,12 +124,26 @@ export class AuthController {
           `${this.configService.get('FRONTEND_URL')}?error=invalid state google auth`,
         );
       }
-      const { accessToken, refreshToken, error } =
-        await this.authService.googleLogin(req.user);
-      const param = error
-        ? `error=${error}`
-        : `accessToken=${accessToken}&refreshToken=${refreshToken}`;
-      res.redirect(`${this.configService.get('FRONTEND_URL')}?${param}`);
+      const { accessToken, refreshToken } = await this.authService.googleLogin(
+        req.user,
+      );
+
+      const host = req.get('host')?.split(':')[0];
+      const fullPath = req.protocol + '://' + req.get('host');
+      res.cookie('accessToken', accessToken, {
+        domain: host,
+        path: '/',
+        httpOnly: true,
+        maxAge: 3600000,
+      });
+
+      res.cookie('refreshToken', refreshToken, {
+        domain: host,
+        path: '/',
+        httpOnly: true,
+        maxAge: 3600000,
+      });
+      res.redirect(`${fullPath}/`);
     } catch (error) {}
   }
 

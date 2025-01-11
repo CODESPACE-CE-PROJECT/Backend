@@ -224,61 +224,81 @@ export class AssignmentService {
     }
   }
 
-  @Cron('*/5 * * * * *') // This runs every 5 seconds
+  @Cron('*/5 * * * * *') // Runs every 5 seconds
   async handleCourseLock() {
     try {
-      const assignments = await this.prisma.assignment.findMany({});
-
       const currentDate = new Date();
 
+      // Fetch only relevant assignments
+      const assignments = await this.prisma.assignment.findMany({
+        where: {
+          OR: [
+            {
+              isLock: true,
+              startAt: { lte: currentDate },
+              expireAt: { gt: currentDate },
+            },
+            {
+              isLock: false,
+              expireAt: { lte: currentDate },
+            },
+            {
+              announceType: { not: AnnounceAssignmentType.ANNOUNCED },
+              announceDate: { lte: currentDate },
+            },
+          ],
+        },
+      });
+
+      // Process assignments
       for (const assignment of assignments) {
-        if (
-          currentDate >= new Date(assignment.startAt) &&
-          currentDate < new Date(assignment.expireAt) &&
-          assignment.isLock !== false
-        ) {
-          await this.prisma.assignment.update({
-            where: { assignmentId: assignment.assignmentId },
-            data: {
-              isLock: false, // Unlock the assignment
-            },
-          });
-        }
+        try {
+          // Unlock assignment
+          if (
+            currentDate >= new Date(assignment.startAt) &&
+            currentDate < new Date(assignment.expireAt) &&
+            assignment.isLock
+          ) {
+            await this.prisma.assignment.update({
+              where: { assignmentId: assignment.assignmentId },
+              data: { isLock: false },
+            });
+          }
 
-        if (
-          (currentDate >= new Date(assignment.expireAt) !==
-            assignment.isLock) !==
-          true
-        ) {
-          await this.prisma.assignment.update({
-            where: { assignmentId: assignment.assignmentId },
-            data: {
-              isLock: true, // Lock the assignment
-            },
-          });
-        }
+          // Lock assignment
+          if (
+            currentDate >= new Date(assignment.expireAt) &&
+            !assignment.isLock
+          ) {
+            await this.prisma.assignment.update({
+              where: { assignmentId: assignment.assignmentId },
+              data: { isLock: true },
+            });
+          }
 
-        if (
-          currentDate >= new Date(assignment.announceDate) &&
-          assignment.announceType !== AnnounceAssignmentType.ANNOUNCED
-        ) {
-          await this.prisma.assignment.update({
-            where: { assignmentId: assignment.assignmentId },
-            data: {
-              announceType: AnnounceAssignmentType.ANNOUNCED,
-            },
-          });
+          // Announce assignment
+          if (
+            currentDate >= new Date(assignment.announceDate) &&
+            assignment.announceType !== AnnounceAssignmentType.ANNOUNCED
+          ) {
+            await this.prisma.assignment.update({
+              where: { assignmentId: assignment.assignmentId },
+              data: { announceType: AnnounceAssignmentType.ANNOUNCED },
+            });
 
-          await this.notificationServie.createNotification(
-            assignment.username,
-            assignment.courseId,
-            NotificationType.ANNOUNCE,
-            assignment.title,
-          );
+            await this.notificationServie.createNotification(
+              assignment.username,
+              assignment.courseId,
+              NotificationType.ANNOUNCE,
+              assignment.title,
+            );
+          }
+        } catch (innerError) {
+          throw new Error('Erro Inner Cron Job In Assignment');
         }
       }
     } catch (error) {
-      throw new Error('Error In Cron job Assignment');
+      throw new Error('Error Cron Job In Assignment');
     }
   }
 }
