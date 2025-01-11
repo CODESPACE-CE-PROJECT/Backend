@@ -12,6 +12,7 @@ import {
   Delete,
   ParseUUIDPipe,
   ParseBoolPipe,
+  HttpCode,
 } from '@nestjs/common';
 import { AssignmentService } from './assignment.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -272,6 +273,16 @@ export class AssignmentController {
 
     if (resultPermit) {
       throw new HttpException(resultPermit, HttpStatus.FORBIDDEN);
+    }
+
+    if (
+      new Date(createAssignmentDTO.expireAt) <=
+      new Date(createAssignmentDTO.startAt)
+    ) {
+      throw new HttpException(
+        'ExpireAt Date Must Have To Grater Than StartAt',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const course = await this.courseService.getCourseById(

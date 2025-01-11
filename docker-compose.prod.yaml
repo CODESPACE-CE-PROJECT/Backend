@@ -30,6 +30,7 @@ services:
       ADMIN_PASS: ${ADMIN_PASS}
       DOMAIN_URL: ${DOMAIN_URL}
       PROBLEM_LIMIT: ${PROBLEM_LIMIT}
+      FRONTEND_URL: ${FRONTEND_URL}
     labels:
       traefik.enable: 'true'
       traefik.http.services.codespace-api.loadbalancer.server.port: '3000'

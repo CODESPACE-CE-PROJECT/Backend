@@ -1,7 +1,8 @@
 import { Users } from '@prisma/client';
 import { IResponseGoogle } from './response-google.inteface.ts';
+import { Request } from 'express';
 
-export interface IRequest {
+export interface IRequest extends Request {
   user: Users;
 }
 
