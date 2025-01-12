@@ -12,7 +12,6 @@ import {
   Delete,
   ParseUUIDPipe,
   ParseBoolPipe,
-  HttpCode,
 } from '@nestjs/common';
 import { AssignmentService } from './assignment.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -142,9 +141,14 @@ export class AssignmentController {
       };
     });
 
+    const dashboard =
+      await this.assignmentService.getDashboardScoreByCourseId(courseId);
     return {
       message: 'Successfully Get Assignment',
-      data: updatedAssignments,
+      data: {
+        assigment: updatedAssignments,
+        dashboard: dashboard,
+      },
     };
   }
 
