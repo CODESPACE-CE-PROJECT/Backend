@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAssigmentDTO } from './dto/createAssignment.dto';
 import { UpdateAssignmentDTO } from './dto/updateAssignment.dto';
-import { AnnounceAssignmentType, NotificationType } from '@prisma/client';
+import {
+  AnnounceAssignmentType,
+  NotificationType,
+  StateSubmission,
+} from '@prisma/client';
 import { Cron } from '@nestjs/schedule';
 import { NotificationService } from 'src/notification/notification.service';
 
@@ -94,6 +98,11 @@ export class AssignmentService {
           problemId: { in: problemIds },
           username: username,
         },
+        orderBy: [
+          {
+            no: 'desc',
+          },
+        ],
       });
       return submission;
     } catch (error) {
@@ -114,6 +123,106 @@ export class AssignmentService {
       return assignment;
     } catch (error) {
       throw new Error('Error Fetch Assignment');
+    }
+  }
+
+  async getDashboardScoreByCourseId(courseId: string) {
+    try {
+      const students = await this.prisma.courseStudent.findMany({
+        where: {
+          courseId: courseId,
+        },
+      });
+
+      const problems = await this.prisma.problem.findMany({
+        where: {
+          assignment: {
+            courseId: courseId,
+          },
+        },
+      });
+
+      const totalScoreProblem = problems.reduce(
+        (sum, problem) => sum + (problem.score || 0),
+        0,
+      );
+
+      const submission = await this.prisma.submission.findMany({
+        where: {
+          problem: {
+            assignment: {
+              courseId: courseId,
+            },
+          },
+          stateSubmission: StateSubmission.PASS,
+        },
+        include: {
+          problem: {
+            select: {
+              score: true,
+            },
+          },
+        },
+      });
+
+      const totalScoreEachUser = students.map((student) => {
+        const studentSubmissions = submission.filter(
+          (submission) => submission.username === student.username,
+        );
+
+        const totalScore = studentSubmissions.reduce(
+          (sum, submission) => sum + (submission.problem?.score || 0),
+          0,
+        );
+
+        return {
+          username: student.username,
+          totalScore,
+        };
+      });
+
+      const scores = totalScoreEachUser.map((user) => user.totalScore);
+      const maxScore = Math.max(...scores);
+      const minScore = Math.min(...scores);
+      const averageScore =
+        scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+      const numberOfRanges = 5;
+
+      const rangeSize = Math.ceil(totalScoreProblem / numberOfRanges);
+
+      const scoreRanges: { max: number; min: number }[] = [];
+      for (let i = 0; i < numberOfRanges; i++) {
+        const min = i * rangeSize + 1;
+        const max = (i + 1) * rangeSize;
+        scoreRanges.push({ min: i === 0 ? 0 : min, max });
+      }
+
+      const scoreFrequencyByRange = scoreRanges.map((range) => ({
+        range: `${range.min}-${range.max}`,
+        count: 0,
+      }));
+
+      totalScoreEachUser.forEach((user) => {
+        const score = user.totalScore;
+
+        const rangeIndex = scoreRanges.findIndex(
+          (range) => score >= range.min && score <= range.max,
+        );
+
+        if (rangeIndex !== -1) {
+          scoreFrequencyByRange[rangeIndex].count += 1;
+        }
+      });
+      return {
+        maxScore,
+        minScore,
+        averageScore,
+        totalStudent: students.length,
+        range: scoreFrequencyByRange,
+      };
+    } catch (error) {
+      throw new Error('Failed to fetch dashboard scores');
     }
   }
 
