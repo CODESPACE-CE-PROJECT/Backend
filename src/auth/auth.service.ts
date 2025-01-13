@@ -43,7 +43,7 @@ export class AuthService {
   generateRefreshToken(payload: IPayload) {
     return this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
-      expiresIn: '14d',
+      expiresIn: '7d',
     });
   }
 
