@@ -65,6 +65,22 @@ export class CourseService {
                 orderBy: {
                   createAt: 'desc',
                 },
+                include: {
+                  user: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      pictureUrl: true,
+                    },
+                  },
+                },
+              },
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  pictureUrl: true,
+                },
               },
             },
           },
@@ -74,6 +90,15 @@ export class CourseService {
             },
             where: {
               announceType: AnnounceAssignmentType.ANNOUNCED,
+            },
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  pictureUrl: true,
+                },
+              },
             },
           },
           courseTeacher: {
@@ -163,6 +188,7 @@ export class CourseService {
             select: {
               firstName: true,
               lastName: true,
+              pictureUrl: true,
             },
           },
         },
