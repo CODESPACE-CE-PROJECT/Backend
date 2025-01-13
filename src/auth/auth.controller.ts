@@ -93,7 +93,7 @@ export class AuthController {
   @Get('google/callback')
   async googleAuthRedirect(
     @Req() req: any,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
     @Query('state') state: string,
     @Session() session: Record<string, any>,
   ) {
@@ -102,25 +102,12 @@ export class AuthController {
       if (jsonData.rawState !== session.oauthState) {
         res.redirect(`${jsonData.referer}?error=invalid state google auth`);
       }
-      const { accessToken, refreshToken } = await this.authService.googleLogin(
-        req.user,
+      const { accessToken, refreshToken, error } =
+        await this.authService.googleLogin(req.user);
+
+      res.redirect(
+        `${jsonData.referer}/login?accessToken=${accessToken}&refreshToken=${refreshToken}&error=${error}`,
       );
-
-      const domain = jsonData.referer?.match(/^(?:https?:\/\/)?([^:/\s]+)/);
-      if (domain) {
-        res.cookie('accessToken', accessToken, {
-          domain: domain[1],
-          path: '/',
-          maxAge: 3600000,
-        });
-
-        res.cookie('refreshToken', refreshToken, {
-          domain: domain[1],
-          path: '/',
-          maxAge: 3600000,
-        });
-      }
-      res.redirect(`${jsonData.referer}/`);
     } catch (error) {}
   }
 
