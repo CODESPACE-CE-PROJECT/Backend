@@ -68,6 +68,11 @@ export class SchoolService {
   async getAllSchool() {
     try {
       const schools = await this.prisma.school.findMany({
+        where: {
+          NOT: {
+            schoolName: 'ADMIN',
+          },
+        },
         include: {
           permission: true,
           users: true,

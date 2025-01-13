@@ -64,7 +64,7 @@ export class NotificationService {
             {
               NOT: {
                 closedBy: {
-                  some: { userId: username },
+                  some: { username: username },
                 },
               },
             },
@@ -80,6 +80,11 @@ export class NotificationService {
       } else {
         orConditions.push({
           NOT: { type: NotificationType.ACTION },
+          course: {
+            courseStudent: {
+              some: { username },
+            },
+          },
         });
       }
 
@@ -87,10 +92,20 @@ export class NotificationService {
         where: {
           OR: orConditions,
         },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              pictureUrl: true,
+            },
+          },
+        },
       });
 
       return notifications;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Fetching Notifications');
     }
   }
