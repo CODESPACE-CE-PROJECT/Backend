@@ -20,7 +20,11 @@ export class CourseService {
 
   async getAllCourse() {
     try {
-      const courses = await this.prisma.course.findMany();
+      const courses = await this.prisma.course.findMany({
+        include: {
+          user: true,
+        },
+      });
       return courses;
     } catch (error) {
       throw new Error('Can Not Fetch Course');
@@ -153,6 +157,14 @@ export class CourseService {
               },
             },
           ],
+        },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
         },
       });
       return course;

@@ -146,7 +146,7 @@ export class AssignmentController {
     return {
       message: 'Successfully Get Assignment',
       data: {
-        assigment: updatedAssignments,
+        assignment: updatedAssignments,
         dashboard: dashboard,
       },
     };

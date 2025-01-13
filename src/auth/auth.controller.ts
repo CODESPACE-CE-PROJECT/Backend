@@ -19,7 +19,6 @@ import { LoginDTO } from './dto/login.dto';
 import { IRequest } from './interface/request.interface';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { Response } from 'express';
-import { ConfigService } from '@nestjs/config';
 import { Record } from '@prisma/client/runtime/library';
 import { JwtRefreshAuthGuard } from './refresh-auth.guard';
 import { IPayload } from './interface/payload.interface';
@@ -27,47 +26,27 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { ForgotPasswordDTO } from './dto/forgotPasswordDTO.dto';
 import { UserService } from 'src/user/user.service';
 
+@ApiBearerAuth()
 @ApiTags('Authenication')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly configService: ConfigService,
     private readonly userService: UserService,
   ) {}
 
   @ApiOperation({ summary: 'Local Login (Student, Teacher, Admin)' })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(
-    @Request() req: IRequest,
-    @Res({ passthrough: true }) res: Response,
-    @Body() _loginDTO: LoginDTO,
-  ) {
+  async login(@Request() req: IRequest, @Body() _loginDTO: LoginDTO) {
     const { accessToken, refreshToken } = await this.authService.login(
       req.user,
     );
 
-    const host = req.get('host')?.split(':')[0];
-
-    res.cookie('accessToken', accessToken, {
-      domain: host,
-      path: '/',
-      httpOnly: true,
-      maxAge: 3600000,
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      domain: host,
-      path: '/',
-      httpOnly: true,
-      maxAge: 3600000,
-    });
-
     return {
       message: 'Successfully Logged In',
-      accessToken: accessToken,
-      refreshToken: refreshToken,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -114,36 +93,34 @@ export class AuthController {
   @Get('google/callback')
   async googleAuthRedirect(
     @Req() req: any,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
     @Query('state') state: string,
     @Session() session: Record<string, any>,
   ) {
     try {
-      if (state !== session.oauthState) {
-        res.redirect(
-          `${this.configService.get('FRONTEND_URL')}?error=invalid state google auth`,
-        );
+      const jsonData: { rawState: string; referer: string } = JSON.parse(state);
+      if (jsonData.rawState !== session.oauthState) {
+        res.redirect(`${jsonData.referer}?error=invalid state google auth`);
       }
       const { accessToken, refreshToken } = await this.authService.googleLogin(
         req.user,
       );
 
-      const host = req.get('host')?.split(':')[0];
-      const fullPath = req.protocol + '://' + req.get('host');
-      res.cookie('accessToken', accessToken, {
-        domain: host,
-        path: '/',
-        httpOnly: true,
-        maxAge: 3600000,
-      });
+      const domain = jsonData.referer?.match(/^(?:https?:\/\/)?([^:/\s]+)/);
+      if (domain) {
+        res.cookie('accessToken', accessToken, {
+          domain: domain[1],
+          path: '/',
+          maxAge: 3600000,
+        });
 
-      res.cookie('refreshToken', refreshToken, {
-        domain: host,
-        path: '/',
-        httpOnly: true,
-        maxAge: 3600000,
-      });
-      res.redirect(`${fullPath}/`);
+        res.cookie('refreshToken', refreshToken, {
+          domain: domain[1],
+          path: '/',
+          maxAge: 3600000,
+        });
+      }
+      res.redirect(`${jsonData.referer}/`);
     } catch (error) {}
   }
 
