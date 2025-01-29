@@ -96,10 +96,10 @@ export class SubmissionController {
       throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
     }
 
-    const teacher = problem.assignment.course.courseTeacher.find(
+    const teacher = problem.assignment?.course.courseTeacher.find(
       (teacher) => teacher.username === req.user.username,
     );
-    const student = problem.assignment.course.courseStudent.find(
+    const student = problem.assignment?.course.courseStudent.find(
       (student) => student.username === req.user.username,
     );
 
@@ -139,10 +139,10 @@ export class SubmissionController {
     if (!problem) {
       throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
     }
-    const teacher = problem.assignment.course.courseTeacher.find(
+    const teacher = problem.assignment?.course.courseTeacher.find(
       (teacher) => teacher.username === req.user.username,
     );
-    const student = problem.assignment.course.courseStudent.find(
+    const student = problem.assignment?.course.courseStudent.find(
       (student) => student.username === req.user.username,
     );
 
