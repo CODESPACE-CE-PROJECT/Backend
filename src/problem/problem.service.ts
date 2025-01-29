@@ -7,7 +7,7 @@ import { UpdateProblemDTO } from './dto/updateProblemDTO.dto';
 export class ProblemService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProblemById(id: string) {
+  async getProblemById(id: string, username?: string) {
     try {
       const problem = await this.prisma.problem.findUnique({
         where: {
@@ -28,7 +28,16 @@ export class ProblemService {
           constraint: true,
         },
       });
-      return problem;
+      const submission = await this.prisma.submission.findFirst({
+        where: {
+          username: username,
+          problemId: id,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+      return { ...problem, submission };
     } catch (error) {
       throw new Error('Error Fetch Problem');
     }

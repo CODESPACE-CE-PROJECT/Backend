@@ -13,12 +13,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ProblemService } from './problem.service';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiProperty,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { AssignmentService } from 'src/assignment/assignment.service';
 import { CreateProblemDTO } from './dto/createProblemDTO.dto';
@@ -48,7 +43,10 @@ export class ProblemController {
     @Request() req: IRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const problem = await this.problemService.getProblemById(id);
+    const problem = await this.problemService.getProblemById(
+      id,
+      req.user.username,
+    );
 
     if (!problem) {
       throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
