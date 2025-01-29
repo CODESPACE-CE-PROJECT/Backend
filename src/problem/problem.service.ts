@@ -28,6 +28,7 @@ export class ProblemService {
           constraint: true,
         },
       });
+
       const submission = await this.prisma.submission.findFirst({
         where: {
           username: username,
