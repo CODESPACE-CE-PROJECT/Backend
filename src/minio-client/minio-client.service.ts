@@ -13,21 +13,16 @@ export class MinioClientService {
     this.logger = new Logger('MinioStorageService');
   }
 
-  async uploadImage(
+  async uploadFile(
     minioBucket: string,
     file: Express.Multer.File,
     pictureUrl: string | null,
   ) {
     try {
       if (!file) {
-        return { imageUrl: '' };
+        return { fileUrl: '' };
       }
-      if (!(file.mimetype.includes('jpeg') || file.mimetype.includes('png'))) {
-        throw new HttpException(
-          'Error Upload Image To MinIO',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+
       const temp_file = Date.now().toString();
       const hashFileName = crypto
         .createHash('sha512')
@@ -47,7 +42,7 @@ export class MinioClientService {
       }
       this.minio.client.putObject(minioBucket, fileName, fileBuffer);
       return {
-        imageUrl: `https://${this.configService.get('MINIO_ENDPOINT')}/${minioBucket}/${fileName}`,
+        fileUrl: `https://${this.configService.get('MINIO_ENDPOINT')}/${minioBucket}/${fileName}`,
       };
     } catch (error) {
       throw new Error(error);

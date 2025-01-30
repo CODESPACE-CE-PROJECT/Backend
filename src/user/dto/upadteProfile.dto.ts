@@ -1,19 +1,19 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Gender } from '@prisma/client';
 export class UpdateProfileDTO {
-  @ApiProperty()
+  @ApiPropertyOptional()
   email: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   firstName: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   lastName: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   studentNo: string;
 
-  @ApiProperty({ enum: ['MALE', 'FEMALE', 'OTHER'] })
+  @ApiPropertyOptional({ enum: ['MALE', 'FEMALE', 'OTHER'] })
   gender: Gender;
 
   @ApiProperty({ type: 'string', format: 'binary' })

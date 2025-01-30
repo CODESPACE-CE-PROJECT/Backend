@@ -466,7 +466,7 @@ export class UserController {
     }
 
     if (picture) {
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 50 * 1024 * 1024; // 10MB
       const allowedTypes = ['image/jpeg', 'image/png'];
 
       if (picture.size > maxSize) {

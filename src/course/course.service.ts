@@ -241,7 +241,7 @@ export class CourseService {
     try {
       let imageUrl = null;
       if (createCourseDTO.picture) {
-        imageUrl = await this.minio.uploadImage(
+        imageUrl = await this.minio.uploadFile(
           'course',
           createCourseDTO.picture,
           '',
@@ -254,7 +254,7 @@ export class CourseService {
           description: createCourseDTO.description,
           username: username,
           schoolId: schoolId,
-          backgroundUrl: imageUrl?.imageUrl,
+          backgroundUrl: imageUrl?.fileUrl,
         },
       });
 
@@ -293,7 +293,7 @@ export class CourseService {
     try {
       let imageUrl = null;
       if (updateCourseDTO.picture) {
-        imageUrl = await this.minio.uploadImage(
+        imageUrl = await this.minio.uploadFile(
           'course',
           updateCourseDTO.picture,
           '',
