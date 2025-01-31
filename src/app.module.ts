@@ -14,6 +14,7 @@ import { PermissionModule } from './permission/permission.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationModule } from './notification/notification.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { FileModule } from './file/file.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     CodeSpaceModule,
     NotificationModule,
     DashboardModule,
+    FileModule,
   ],
   controllers: [AppController],
 })

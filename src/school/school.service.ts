@@ -16,7 +16,7 @@ export class SchoolService {
     try {
       let imageUrl = null;
       if (createSchoolDTO.picture) {
-        imageUrl = await this.minio.uploadImage(
+        imageUrl = await this.minio.uploadFile(
           'school',
           createSchoolDTO.picture,
           '',
@@ -29,7 +29,7 @@ export class SchoolService {
         },
         data: {
           schoolName: createSchoolDTO.schoolName,
-          pictureUrl: imageUrl?.imageUrl,
+          pictureUrl: imageUrl?.fileUrl,
           package: createSchoolDTO.package,
           address: createSchoolDTO.address,
           subDistrict: createSchoolDTO.subdistrict,
@@ -201,7 +201,7 @@ export class SchoolService {
     try {
       let imageUrl = null;
       if (updateSchoolDTO.picture) {
-        imageUrl = await this.minio.uploadImage(
+        imageUrl = await this.minio.uploadFile(
           'profile',
           updateSchoolDTO.picture,
           '',
@@ -216,7 +216,7 @@ export class SchoolService {
         },
         data: {
           schoolName: updateSchoolDTO.schoolName,
-          pictureUrl: imageUrl?.imageUrl,
+          pictureUrl: imageUrl?.fileUrl,
           package: updateSchoolDTO.package,
           address: updateSchoolDTO.address,
           subDistrict: updateSchoolDTO.subdistrict,

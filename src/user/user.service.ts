@@ -82,6 +82,7 @@ export class UserService {
         firstName: string;
         lastName: string;
       }[] = [];
+
       // hashing password
       const allUser = await Promise.all(
         createUserDTO.users.map(async (user) => {
@@ -138,7 +139,7 @@ export class UserService {
     try {
       let imageUrl = null;
       if (updateProfileDTO.picture) {
-        imageUrl = await this.minio.uploadImage(
+        imageUrl = await this.minio.uploadFile(
           'profile',
           updateProfileDTO.picture,
           '',
@@ -158,7 +159,7 @@ export class UserService {
           firstName: updateProfileDTO.firstName,
           lastName: updateProfileDTO.lastName,
           studentNo: updateProfileDTO.studentNo,
-          pictureUrl: imageUrl?.imageUrl,
+          pictureUrl: imageUrl?.fileUrl,
         },
       });
       return user;
@@ -193,7 +194,7 @@ export class UserService {
     try {
       let imageUrl = null;
       if (updateUserDTO.picture) {
-        imageUrl = await this.minio.uploadImage(
+        imageUrl = await this.minio.uploadFile(
           'profile',
           updateUserDTO.picture,
           '',
@@ -213,7 +214,7 @@ export class UserService {
           firstName: updateUserDTO.firstName,
           lastName: updateUserDTO.lastName,
           studentNo: updateUserDTO.studentNo,
-          pictureUrl: imageUrl?.imageUrl,
+          pictureUrl: imageUrl?.fileUrl,
           isEnable: updateUserDTO.isEnable,
           allowLogin: updateUserDTO.allowLogin,
         },
