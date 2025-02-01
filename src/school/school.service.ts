@@ -62,7 +62,6 @@ export class SchoolService {
       });
       return school;
     } catch (error) {
-      console.log(error);
       throw new Error('Error Create School');
     }
   }
@@ -73,11 +72,18 @@ export class SchoolService {
         where: {
           NOT: {
             schoolName: 'ADMIN',
+            isEnable: false,
           },
         },
         include: {
           permission: true,
-          users: true,
+          users: {
+            where: {
+              NOT: {
+                isEnable: false,
+              },
+            },
+          },
         },
       });
       const updateSchool = schools.map((school) => {
@@ -217,18 +223,15 @@ export class SchoolService {
           schoolId: id,
         },
         data: {
-          schoolName: updateSchoolDTO.schoolName,
+          schoolName: updateSchoolDTO?.schoolName,
           pictureUrl: imageUrl?.fileUrl,
-          package: updateSchoolDTO.package,
-          address: updateSchoolDTO.address,
-          subDistrict: updateSchoolDTO.subdistrict,
-          district: updateSchoolDTO.district,
-          province: updateSchoolDTO.province,
-          postCode: updateSchoolDTO.postCode,
-          isEnable:
-            typeof updateSchoolDTO.isEnable === 'string'
-              ? updateSchoolDTO.isEnable === 'true'
-              : updateSchoolDTO.isEnable,
+          package: updateSchoolDTO?.package,
+          address: updateSchoolDTO?.address,
+          subDistrict: updateSchoolDTO?.subdistrict,
+          district: updateSchoolDTO?.district,
+          province: updateSchoolDTO?.province,
+          postCode: updateSchoolDTO?.postCode,
+          isEnable: updateSchoolDTO.isEnable?.toString() === 'true',
           permission: {
             update: {
               maxCreateTeacher: parseInt(
