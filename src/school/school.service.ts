@@ -39,28 +39,30 @@ export class SchoolService {
           permission: {
             create: {
               maxCreateTeacher: parseInt(
-                createSchoolDTO.maxCreateTeacher.toString(),
+                createSchoolDTO.maxCreateTeacher?.toString(),
                 10,
               ),
               maxCreateStudent: parseInt(
-                createSchoolDTO.maxCreateStudent.toString(),
+                createSchoolDTO.maxCreateStudent?.toString(),
                 10,
               ),
               maxCreateCoursePerTeacher: parseInt(
-                createSchoolDTO.maxCreateCoursePerTeacher.toString(),
+                createSchoolDTO.maxCreateCoursePerTeacher?.toString(),
                 10,
               ),
-              canCreateUser: createSchoolDTO.canCateaUser.toString() === 'true',
+              canCreateUser:
+                createSchoolDTO.canCateaUser?.toString() === 'true',
               canUpdateUser:
-                createSchoolDTO.canUpdateUser.toString() === 'true',
+                createSchoolDTO.canUpdateUser?.toString() === 'true',
               canDeleteUser:
-                createSchoolDTO.canDeleteUser.toString() === 'true',
+                createSchoolDTO.canDeleteUser?.toString() === 'true',
             },
           },
         },
       });
       return school;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Create School');
     }
   }
@@ -230,22 +232,23 @@ export class SchoolService {
           permission: {
             update: {
               maxCreateTeacher: parseInt(
-                updateSchoolDTO.maxCreateTeacher.toString(),
+                updateSchoolDTO.maxCreateTeacher?.toString(),
                 10,
               ),
               maxCreateStudent: parseInt(
-                updateSchoolDTO.maxCreateStudent.toString(),
+                updateSchoolDTO.maxCreateStudent?.toString(),
                 10,
               ),
               maxCreateCoursePerTeacher: parseInt(
-                updateSchoolDTO.maxCreateCoursePerTeacher.toString(),
+                updateSchoolDTO.maxCreateCoursePerTeacher?.toString(),
                 10,
               ),
-              canCreateUser: updateSchoolDTO.canCateaUser.toString() === 'true',
+              canCreateUser:
+                updateSchoolDTO.canCateaUser?.toString() === 'true',
               canUpdateUser:
-                updateSchoolDTO.canUpdateUser.toString() === 'true',
+                updateSchoolDTO.canUpdateUser?.toString() === 'true',
               canDeleteUser:
-                updateSchoolDTO.canDeleteUser.toString() === 'true',
+                updateSchoolDTO.canDeleteUser?.toString() === 'true',
             },
           },
         },
