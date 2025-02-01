@@ -72,18 +72,12 @@ export class SchoolService {
         where: {
           NOT: {
             schoolName: 'ADMIN',
-            isEnable: false,
           },
+          isEnable: true,
         },
         include: {
           permission: true,
-          users: {
-            where: {
-              NOT: {
-                isEnable: false,
-              },
-            },
-          },
+          users: true,
         },
       });
       const updateSchool = schools.map((school) => {
@@ -141,6 +135,19 @@ export class SchoolService {
               hashedPassword: true,
             },
           },
+        },
+      });
+      return school;
+    } catch (error) {
+      throw new Error('Error Fetch School');
+    }
+  }
+
+  async getSchoolBySchoolName(schoolName: string) {
+    try {
+      const school = await this.prisma.school.findFirst({
+        where: {
+          schoolName: schoolName,
         },
       });
       return school;

@@ -169,6 +169,16 @@ export class SchoolController {
     } else {
       createSchoolDTO.picture = null; // Handle no file uploaded
     }
+    const invalidSchool = await this.schoolService.getSchoolByName(
+      createSchoolDTO.schoolName,
+    );
+
+    if (invalidSchool) {
+      throw new HttpException(
+        'Already Have School Name',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     const school = await this.schoolService.createSchool(createSchoolDTO);
     return {
