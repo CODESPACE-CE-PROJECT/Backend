@@ -254,7 +254,7 @@ export class SchoolService {
                 10,
               ),
               canCreateUser:
-                updateSchoolDTO.canCateaUser?.toString() === 'true',
+                updateSchoolDTO.canCreateaUser?.toString() === 'true',
               canUpdateUser:
                 updateSchoolDTO.canUpdateUser?.toString() === 'true',
               canDeleteUser:

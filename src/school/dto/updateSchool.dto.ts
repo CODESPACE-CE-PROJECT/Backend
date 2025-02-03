@@ -39,7 +39,7 @@ export class UpdateSchoolDTO {
   maxCreateCoursePerTeacher: number;
 
   @ApiProperty()
-  canCateaUser: boolean;
+  canCreateaUser: boolean;
 
   @ApiProperty()
   canUpdateUser: boolean;
