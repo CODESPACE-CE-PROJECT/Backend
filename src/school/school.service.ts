@@ -131,6 +131,9 @@ export class SchoolService {
         include: {
           permission: true,
           users: {
+            where: {
+              isEnable: true,
+            },
             omit: {
               hashedPassword: true,
             },
@@ -166,9 +169,6 @@ export class SchoolService {
       const user = await this.prisma.users.findMany({
         where: {
           isEnable: false,
-          school: {
-            isEnable: true,
-          },
         },
       });
       return {
