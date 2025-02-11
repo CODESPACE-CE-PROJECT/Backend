@@ -39,6 +39,10 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req: IRequest, @Body() _loginDTO: LoginDTO) {
+    const user = await this.userService.getUserByUsername(req.user.username);
+    if (!user?.allowLogin) {
+      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
     const { accessToken, refreshToken } = await this.authService.login(
       req.user,
     );

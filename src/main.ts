@@ -33,6 +33,6 @@ async function bootstrap() {
       },
     }),
   );
-  await app.listen(3000);
+  await app.listen(parseInt(process.env.PORT as string, 10) || 3000);
 }
 bootstrap();

@@ -15,7 +15,7 @@ export class CreateSchoolDTO {
   address: string;
 
   @ApiProperty()
-  subdistrict: string;
+  subDistrict: string;
 
   @ApiProperty()
   district: string;
@@ -36,7 +36,7 @@ export class CreateSchoolDTO {
   maxCreateCoursePerTeacher: number;
 
   @ApiProperty()
-  canCateaUser: boolean;
+  canCreateUser: boolean;
 
   @ApiProperty()
   canUpdateUser: boolean;

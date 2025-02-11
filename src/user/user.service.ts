@@ -217,6 +217,7 @@ export class UserService {
           pictureUrl: imageUrl?.fileUrl,
           isEnable: updateUserDTO.isEnable,
           allowLogin: updateUserDTO.allowLogin,
+          role: updateUserDTO.role,
         },
       });
       return user;

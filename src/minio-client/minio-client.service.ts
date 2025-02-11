@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MinioService } from 'nestjs-minio-client';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -41,8 +41,9 @@ export class MinioClientService {
         await this.deleteFile(minioBucket, splitData[4]);
       }
       this.minio.client.putObject(minioBucket, fileName, fileBuffer);
+      const prefixrUrl = `${this.configService.get('NODE_ENV') === 'production' ? 'https' : 'http'}://${this.configService.get('MINIO_ENDPOINT')}${this.configService.get('NODE_ENV') !== 'production' ? `:${this.configService.get('MINIO_PORT')}` : ''}`;
       return {
-        fileUrl: `https://${this.configService.get('MINIO_ENDPOINT')}/${minioBucket}/${fileName}`,
+        fileUrl: `${prefixrUrl}/${minioBucket}/${fileName}`,
       };
     } catch (error) {
       throw new Error(error);
