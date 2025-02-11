@@ -1,49 +1,49 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PackageType } from '@prisma/client';
 
 export class UpdateSchoolDTO {
-  @ApiProperty()
+  @ApiPropertyOptional()
   schoolName: string;
 
   @ApiProperty({ type: 'string', format: 'binary', required: false })
   picture: Express.Multer.File | null;
 
-  @ApiProperty({ enum: ['STANDARD', 'PREMIUM'] })
+  @ApiPropertyOptional({ enum: ['STANDARD', 'PREMIUM'] })
   package: PackageType;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   isEnable: boolean;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   address: string;
 
-  @ApiProperty()
-  subdistrict: string;
+  @ApiPropertyOptional()
+  subDistrict: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   district: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   province: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   postCode: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   maxCreateTeacher: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   maxCreateStudent: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   maxCreateCoursePerTeacher: number;
 
-  @ApiProperty()
-  canCreateaUser: boolean;
+  @ApiPropertyOptional()
+  canCreateUser: boolean;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   canUpdateUser: boolean;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   canDeleteUser: boolean;
 }

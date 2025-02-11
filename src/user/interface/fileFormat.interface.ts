@@ -10,7 +10,6 @@ export interface IFileFormat {
   lastname: string;
   gender: string;
   username: string;
-  password: string;
   email: string | undefined;
   role: string;
   validType: ValidateType;

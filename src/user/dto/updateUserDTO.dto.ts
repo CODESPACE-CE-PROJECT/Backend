@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Gender } from '@prisma/client';
+import { Gender, Role } from '@prisma/client';
 export class UpdateUserDTO {
   @ApiProperty()
   email: string;
@@ -24,4 +24,6 @@ export class UpdateUserDTO {
 
   @ApiProperty()
   isEnable: boolean;
+
+  role: Role;
 }

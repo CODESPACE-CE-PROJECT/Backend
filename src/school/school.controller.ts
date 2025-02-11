@@ -176,7 +176,7 @@ export class SchoolController {
     if (invalidSchool) {
       throw new HttpException(
         'Already Have School Name',
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.NOT_ACCEPTABLE,
       );
     }
 
@@ -206,8 +206,24 @@ export class SchoolController {
     }
 
     const invalidSchool = await this.schoolService.getSchoolById(id);
+
     if (!invalidSchool) {
       throw new HttpException('School Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const invalidSchoolName = await this.schoolService.getSchoolByName(
+      updateSchoolDTO.schoolName,
+    );
+
+    if (
+      !invalidSchoolName &&
+      updateSchoolDTO.schoolName &&
+      invalidSchool.schoolName !== updateSchoolDTO.schoolName
+    ) {
+      throw new HttpException(
+        'Already Have This Name School',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
     }
 
     if (picture) {

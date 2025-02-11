@@ -11,9 +11,11 @@ export class DashboardService {
     try {
       const count = await this.getCountSchoolAndUserCount();
       const months = await this.getSchoolAndUserFromMonth();
+      const province = await this.getSchoolAndUserFromProvince();
       return {
         count: count,
         months: months,
+        province: province,
       };
     } catch (error) {
       throw new Error('Error Fetch Info Dashboard');

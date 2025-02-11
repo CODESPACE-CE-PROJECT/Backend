@@ -32,36 +32,26 @@ export class SchoolService {
           pictureUrl: imageUrl?.fileUrl,
           package: createSchoolDTO.package,
           address: createSchoolDTO.address,
-          subDistrict: createSchoolDTO.subdistrict,
+          subDistrict: createSchoolDTO.subDistrict,
           district: createSchoolDTO.district,
           province: createSchoolDTO.province,
           postCode: createSchoolDTO.postCode,
           permission: {
             create: {
-              maxCreateTeacher: parseInt(
-                createSchoolDTO.maxCreateTeacher?.toString(),
-                10,
-              ),
-              maxCreateStudent: parseInt(
-                createSchoolDTO.maxCreateStudent?.toString(),
-                10,
-              ),
-              maxCreateCoursePerTeacher: parseInt(
-                createSchoolDTO.maxCreateCoursePerTeacher?.toString(),
-                10,
-              ),
-              canCreateUser:
-                createSchoolDTO.canCateaUser?.toString() === 'true',
-              canUpdateUser:
-                createSchoolDTO.canUpdateUser?.toString() === 'true',
-              canDeleteUser:
-                createSchoolDTO.canDeleteUser?.toString() === 'true',
+              maxCreateTeacher: createSchoolDTO.maxCreateCoursePerTeacher,
+              maxCreateStudent: createSchoolDTO.maxCreateStudent,
+              maxCreateCoursePerTeacher:
+                createSchoolDTO.maxCreateCoursePerTeacher,
+              canCreateUser: createSchoolDTO.canCreateUser,
+              canUpdateUser: createSchoolDTO.canUpdateUser,
+              canDeleteUser: createSchoolDTO.canDeleteUser,
             },
           },
         },
       });
       return school;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Create School');
     }
   }
@@ -222,6 +212,7 @@ export class SchoolService {
           '',
         );
       }
+
       const school = await this.prisma.school.update({
         include: {
           permission: true,
@@ -234,48 +225,39 @@ export class SchoolService {
           pictureUrl: imageUrl?.fileUrl,
           package: updateSchoolDTO?.package,
           address: updateSchoolDTO?.address,
-          subDistrict: updateSchoolDTO?.subdistrict,
+          subDistrict: updateSchoolDTO?.subDistrict,
           district: updateSchoolDTO?.district,
           province: updateSchoolDTO?.province,
           postCode: updateSchoolDTO?.postCode,
-          isEnable: updateSchoolDTO.isEnable?.toString() === 'true',
+          isEnable: updateSchoolDTO.isEnable,
           permission: {
             update: {
-              maxCreateTeacher: parseInt(
-                updateSchoolDTO.maxCreateTeacher?.toString(),
-                10,
-              ),
-              maxCreateStudent: parseInt(
-                updateSchoolDTO.maxCreateStudent?.toString(),
-                10,
-              ),
-              maxCreateCoursePerTeacher: parseInt(
-                updateSchoolDTO.maxCreateCoursePerTeacher?.toString(),
-                10,
-              ),
-              canCreateUser:
-                updateSchoolDTO.canCreateaUser?.toString() === 'true',
-              canUpdateUser:
-                updateSchoolDTO.canUpdateUser?.toString() === 'true',
-              canDeleteUser:
-                updateSchoolDTO.canDeleteUser?.toString() === 'true',
+              maxCreateTeacher: updateSchoolDTO.maxCreateTeacher,
+              maxCreateStudent: updateSchoolDTO.maxCreateStudent,
+              maxCreateCoursePerTeacher:
+                updateSchoolDTO.maxCreateCoursePerTeacher,
+              canCreateUser: updateSchoolDTO.canCreateUser,
+              canUpdateUser: updateSchoolDTO.canUpdateUser,
+              canDeleteUser: updateSchoolDTO.canDeleteUser,
             },
           },
         },
       });
 
-      if (updateSchoolDTO.isEnable.toString() === 'false')
+      if (updateSchoolDTO.isEnable) {
         await this.prisma.users.updateMany({
           where: {
             schoolId: id,
           },
           data: {
-            isEnable: false,
+            isEnable: updateSchoolDTO.isEnable,
           },
         });
+      }
 
       return school;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Update School');
     }
   }

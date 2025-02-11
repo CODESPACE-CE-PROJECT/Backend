@@ -202,7 +202,7 @@ export class UserController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
           new FileTypeValidator({
             fileType:
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel',
@@ -234,22 +234,22 @@ export class UserController {
       sheetData.forEach((user: IFileFormat, rowIndex) => {
         const rowErrors: string[] = [];
 
-        if (!user.studentId) rowErrors.push('student ID is required');
-        if (!user.firstname) rowErrors.push('firstname is required');
-        if (!user.lastname) rowErrors.push('lastname is required');
+        if (!user.studentId && user.role === 'student')
+          rowErrors.push('กรุณาใส่ student ID');
+        if (!user.firstname) rowErrors.push('กรุณาใส่ firstname');
+        if (!user.lastname) rowErrors.push('กรุณาใส่ lastname');
         if (!user.gender || !['male', 'female', 'other'].includes(user.gender))
-          rowErrors.push('gender must be one of "male", "female", "other"');
-        if (!user.username) rowErrors.push('username is required');
-        if (!user.password) rowErrors.push('password is required');
+          rowErrors.push('gender ต้องเป็น "male", "female" หรือ "other"');
+        if (!user.username) rowErrors.push('กรุณาใส่ username');
         if (user.role !== 'teacher' && user.role !== 'student')
-          rowErrors.push('role must be "teacher" or "student"');
+          rowErrors.push('role ต้องเป็น "teacher" หรือ "student"');
         if (user.email && !/^\S+@\S+\.\S+$/.test(user.email)) {
-          rowErrors.push('email must be a valid email address');
+          rowErrors.push('อีเมลล์ที่กรอกต้องเป็นรูปแบบอีเมมล์เท่านั้น');
         }
 
         if (rowErrors.length > 0) {
           errors.push(
-            `Sheet "${sheetName}", Row ${rowIndex + 2}: ${rowErrors.join(', ')}`,
+            `Sheet "${sheetName}", แถว ${rowIndex + 2}: ${rowErrors.join(', ')}`,
           );
         } else {
           user.gender = user.gender.toUpperCase();
@@ -437,6 +437,7 @@ export class UserController {
     }
 
     const validUser = await this.userService.getUserByUsername(username);
+
     if (!validUser) {
       throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     }
@@ -461,6 +462,17 @@ export class UserController {
     ) {
       throw new HttpException(
         'Can Not Have Permission Update User',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+
+    const validUserEmail = await this.userService.getUserByEmail(
+      updateUserDTO.email,
+    );
+
+    if (validUserEmail && updateUserDTO.email === validUser.email) {
+      throw new HttpException(
+        'Already Have This Email',
         HttpStatus.NOT_ACCEPTABLE,
       );
     }
