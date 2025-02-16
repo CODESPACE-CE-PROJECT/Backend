@@ -17,7 +17,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IRequest } from 'src/auth/interface/request.interface';
 import { AssignmentService } from 'src/assignment/assignment.service';
 import { CreateProblemDTO } from './dto/createProblemDTO.dto';
-import { Role } from '@prisma/client';
+import { Role, StateSubmission } from '@prisma/client';
 import { UpdateProblemDTO } from './dto/updateProblemDTO.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UtilsService } from 'src/utils/utils.service';
@@ -59,6 +59,18 @@ export class ProblemController {
       (student) => student.username === req.user.username,
     );
 
+    const otherProblems = problem.assignment?.problem;
+
+    const updateOtherProblems = otherProblems?.map((item) => {
+      return {
+        problemId: item.problemId,
+        title: item.title,
+        stateSubmission: !item.submission[0]?.stateSubmission
+          ? StateSubmission.NOTSEND
+          : item.submission[0]?.stateSubmission,
+      };
+    });
+
     if (!teacher && !student) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
@@ -69,7 +81,10 @@ export class ProblemController {
 
     return {
       message: 'Successfully Get Problem',
-      data: problem,
+      data: {
+        ...problem,
+        other: updateOtherProblems,
+      },
     };
   }
 

@@ -16,8 +16,24 @@ export class ProblemService {
         include: {
           assignment: {
             select: {
+              title: true,
+              problem: {
+                select: {
+                  problemId: true,
+                  title: true,
+                  submission: {
+                    where: {
+                      username: username,
+                    },
+                    orderBy: {
+                      createdAt: 'desc',
+                    },
+                  },
+                },
+              },
               course: {
                 select: {
+                  title: true,
                   courseTeacher: true,
                   courseStudent: true,
                 },
@@ -26,19 +42,14 @@ export class ProblemService {
           },
           testCases: true,
           constraint: true,
+          submission: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
         },
       });
-
-      const submission = await this.prisma.submission.findFirst({
-        where: {
-          username: username,
-          problemId: id,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-      return { ...problem, submission };
+      return problem;
     } catch (error) {
       throw new Error('Error Fetch Problem');
     }

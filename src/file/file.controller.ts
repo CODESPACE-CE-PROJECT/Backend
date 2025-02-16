@@ -24,16 +24,20 @@ import { uploadFileDTO } from './dto/uploadFile.dto';
 export class FileController {
   constructor(private readonly fileService: FileService) {}
 
-  @ApiOperation({ summary: 'uploadPDFFile (Student, Teacher, Admin)' })
+  @ApiOperation({ summary: 'upload File (Student, Teacher, Admin)' })
   @UseGuards(JwtAuthGuard)
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({ type: uploadFileDTO })
   @UseInterceptors(FileInterceptor('file'))
-  @Post('pdf')
+  @Post()
   async uploadPDFFile(@UploadedFile() file: Express.Multer.File) {
     if (file) {
       const maxSize = 50 * 1024 * 1024; // 50MB
-      const allowedTypes = ['application/pdf'];
+      const allowedTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ];
 
       if (file.size > maxSize) {
         throw new BadRequestException('File size exceeds the 10MB limit');
@@ -41,19 +45,19 @@ export class FileController {
 
       if (!allowedTypes.includes(file.mimetype)) {
         throw new BadRequestException(
-          'Invalid file type. Only PDF are allowed',
+          'Invalid file type. Only PDF, Word, Exel are allowed',
         );
       }
     }
-    const pdf = await this.fileService.uploadFile(file, 'pdf');
+    const lexicalFile = await this.fileService.uploadFile(file, 'lexical-file');
 
     return {
-      message: 'Successfully Upload FDF File',
-      fileUrl: pdf.fileUrl,
+      message: 'Successfully Upload File',
+      fileUrl: lexicalFile.fileUrl,
     };
   }
 
-  @ApiOperation({ summary: 'uploadLexicalFile (Student, Teacher, Admin)' })
+  @ApiOperation({ summary: 'upload Image File (Student, Teacher, Admin)' })
   @UseGuards(JwtAuthGuard)
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiBody({ type: uploadFileDTO })
