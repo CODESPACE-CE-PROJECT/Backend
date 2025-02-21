@@ -374,17 +374,6 @@ export class AssignmentService {
             });
           }
 
-          // Lock assignment
-          if (
-            currentDate >= new Date(assignment.expireAt) &&
-            !assignment.isLock
-          ) {
-            await this.prisma.assignment.update({
-              where: { assignmentId: assignment.assignmentId },
-              data: { isLock: true },
-            });
-          }
-
           // Announce assignment
           if (
             currentDate >= new Date(assignment.announceDate) &&
