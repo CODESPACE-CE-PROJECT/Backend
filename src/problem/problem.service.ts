@@ -30,6 +30,9 @@ export class ProblemService {
                     },
                   },
                 },
+                orderBy: {
+                  title: 'asc',
+                },
               },
               course: {
                 select: {
