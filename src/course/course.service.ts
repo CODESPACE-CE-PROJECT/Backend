@@ -66,13 +66,7 @@ export class CourseService {
                   createAt: 'desc',
                 },
                 include: {
-                  user: {
-                    select: {
-                      firstName: true,
-                      lastName: true,
-                      pictureUrl: true,
-                    },
-                  },
+                  user: true,
                 },
               },
               user: {
@@ -92,13 +86,7 @@ export class CourseService {
               announceType: AnnounceAssignmentType.ANNOUNCED,
             },
             include: {
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  pictureUrl: true,
-                },
-              },
+              user: true,
             },
           },
           courseTeacher: {
@@ -184,13 +172,7 @@ export class CourseService {
           ],
         },
         include: {
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              pictureUrl: true,
-            },
-          },
+          user: true,
         },
       });
       return course;

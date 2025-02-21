@@ -161,6 +161,20 @@ export class UserController {
     } else {
       updateProfileDTO.picture = null; // Handle no file uploaded
     }
+
+    const myuser = await this.userService.getUserByUsername(req.user.username);
+    const validUserEmail = await this.userService.getUserByEmail(
+      updateProfileDTO.email,
+    );
+
+    if (
+      updateProfileDTO.email &&
+      validUserEmail?.email &&
+      updateProfileDTO.email !== myuser?.email
+    ) {
+      throw new HttpException('Already Have Email', HttpStatus.NOT_ACCEPTABLE);
+    }
+
     const user = await this.userService.updateProfile(
       req.user.username,
       updateProfileDTO,

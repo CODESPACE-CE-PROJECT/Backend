@@ -74,6 +74,10 @@ export class ProblemController {
     if (!teacher && !student) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
+    const title = {
+      assignmentTitle: problem.assignment.title,
+      courseTitle: problem.assignment.course.title,
+    };
 
     if (problem) {
       Reflect.deleteProperty(problem, 'assignment');
@@ -83,6 +87,7 @@ export class ProblemController {
       message: 'Successfully Get Problem',
       data: {
         ...problem,
+        ...title,
         other: updateOtherProblems,
       },
     };
