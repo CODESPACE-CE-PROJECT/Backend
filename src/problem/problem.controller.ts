@@ -79,6 +79,10 @@ export class ProblemController {
       courseTitle: problem.assignment.course.title,
     };
 
+    const currentDate = new Date();
+
+    const isExpire = currentDate > new Date(problem.assignment.expireAt);
+
     if (problem) {
       Reflect.deleteProperty(problem, 'assignment');
     }
@@ -88,6 +92,7 @@ export class ProblemController {
       data: {
         ...problem,
         ...title,
+        isExpire,
         other: updateOtherProblems,
       },
     };

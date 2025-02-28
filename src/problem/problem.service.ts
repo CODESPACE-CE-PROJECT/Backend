@@ -17,6 +17,7 @@ export class ProblemService {
           assignment: {
             select: {
               title: true,
+              expireAt: true,
               problem: {
                 select: {
                   problemId: true,
