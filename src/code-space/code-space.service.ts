@@ -26,6 +26,9 @@ export class CodeSpaceService {
         where: {
           username: username,
         },
+        orderBy: {
+          codeSpaceId: 'desc',
+        },
       });
       return codespace;
     } catch (error) {

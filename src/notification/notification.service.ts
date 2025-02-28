@@ -57,11 +57,6 @@ export class NotificationService {
         orConditions.push({
           AND: [
             {
-              type: {
-                in: [NotificationType.ACTION, NotificationType.ANNOUNCE],
-              },
-            },
-            {
               NOT: {
                 closedBy: {
                   some: { username: username },
@@ -79,12 +74,27 @@ export class NotificationService {
         });
       } else {
         orConditions.push({
-          NOT: { type: NotificationType.ACTION },
-          course: {
-            courseStudent: {
-              some: { username },
+          AND: [
+            {
+              type: {
+                in: [NotificationType.GENERAL, NotificationType.ANNOUNCE],
+              },
             },
-          },
+            {
+              NOT: {
+                closedBy: {
+                  some: { username: username },
+                },
+              },
+            },
+            {
+              course: {
+                courseStudent: {
+                  some: { username },
+                },
+              },
+            },
+          ],
         });
       }
 
@@ -155,13 +165,14 @@ export class NotificationService {
       const userNotification = await this.prisma.userNotification.create({
         data: {
           username: username,
-          notificationId,
+          notificationId: notificationId,
           isClose: true,
         },
       });
 
       return userNotification;
     } catch (error) {
+      console.log(error);
       throw new Error('Failed to create UserNotification');
     }
   }

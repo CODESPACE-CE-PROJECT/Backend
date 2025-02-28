@@ -69,13 +69,7 @@ export class CourseService {
                   user: true,
                 },
               },
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  pictureUrl: true,
-                },
-              },
+              user: true,
             },
           },
           assignment: {
