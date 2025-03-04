@@ -16,11 +16,12 @@ RUN yarn prisma generate
 
 RUN yarn build
 
-ENV NODE_ENV production
 
 FROM node:20-alpine AS production
 
 RUN apk add --no-cache openssl
+
+ENV NODE_ENV production
 
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/node_modules ./node_modules
 COPY --chown=root:root --chmod=755 --from=Build /usr/src/app/dist ./dist
