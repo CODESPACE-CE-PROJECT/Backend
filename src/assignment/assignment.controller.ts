@@ -251,6 +251,7 @@ export class AssignmentController {
         return {
           assignmentId: assignment.assignmentId,
           title: assignment.title,
+          type: assignment.type,
           scores: scoresPerStudent,
         };
       }),

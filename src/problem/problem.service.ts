@@ -47,6 +47,9 @@ export class ProblemService {
           testCases: true,
           constraint: true,
           submission: {
+            where: {
+              username: username,
+            },
             orderBy: {
               createdAt: 'desc',
             },
