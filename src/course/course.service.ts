@@ -282,6 +282,7 @@ export class CourseService {
         data: {
           title: updateCourseDTO.title,
           description: updateCourseDTO.description,
+          backgroundUrl: imageUrl?.fileUrl,
         },
       });
 
