@@ -272,7 +272,7 @@ export class UserService {
       });
       return user;
     } catch (error) {
-      throw new Error('Error Set ');
+      throw new Error('Error Set Realtime');
     }
   }
 

@@ -191,6 +191,9 @@ export class SchoolService {
       const school = await this.prisma.school.findFirst({
         where: {
           schoolId: id,
+          NOT: {
+            isEnable: false,
+          },
         },
         select: {
           users: true,
