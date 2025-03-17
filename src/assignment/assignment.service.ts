@@ -117,7 +117,15 @@ export class AssignmentService {
           courseId: courseId,
         },
         include: {
-          problem: true,
+          problem: {
+            orderBy: {
+              createdAt: 'asc',
+            },
+            include: {
+              testCases: true,
+              constraint: true,
+            },
+          },
         },
       });
       return assignment;

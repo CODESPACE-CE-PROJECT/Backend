@@ -32,12 +32,13 @@ export class ProblemService {
                   },
                 },
                 orderBy: {
-                  title: 'asc',
+                  createdAt: 'asc',
                 },
               },
               course: {
                 select: {
                   title: true,
+                  courseId: true,
                   courseTeacher: true,
                   courseStudent: true,
                 },
@@ -112,7 +113,7 @@ export class ProblemService {
               score: problem.score,
               testCases: {
                 createMany: {
-                  data: problem.testcase,
+                  data: problem.testCases,
                 },
               },
               constraint: {
@@ -128,6 +129,7 @@ export class ProblemService {
 
       return problems;
     } catch (error) {
+      console.log(error);
       throw new Error('Error Create Problem');
     }
   }
@@ -148,11 +150,12 @@ export class ProblemService {
           hint: updateProblemDTO.hint,
           revaleCode: updateProblemDTO.revaleCode,
           isRegex: updateProblemDTO.isRegex,
+          language: updateProblemDTO.language,
           score: updateProblemDTO.score,
           testCases: {
             deleteMany: {},
             createMany: {
-              data: updateProblemDTO.testcase,
+              data: updateProblemDTO.testCases,
             },
           },
           constraint: {

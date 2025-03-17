@@ -72,21 +72,13 @@ export class AssignmentController {
 
     if (req.user.role === Role.TEACHER) {
       const updateAssignment = assignments.map((assignment) => {
-        const updateProblems = assignment.problem.map((problem) => {
-          return {
-            problemId: problem.problemId,
-            score: problem.score,
-          };
-        });
-        const totalScore = updateProblems.reduce(
+        const totalScore = assignment.problem.reduce(
           (total, curr) => total + curr.score,
           0,
         );
 
-        delete (assignment as { problem?: Problem[] }).problem;
         return {
           ...assignment,
-          problem: updateProblems,
           totalScore: totalScore,
         };
       });

@@ -46,7 +46,7 @@ class Problem {
   score: number;
 
   @ApiProperty({ type: TestCase, isArray: true })
-  testcase: TestCase[];
+  testCases: TestCase[];
 
   @ApiProperty({ type: Constraint, isArray: true })
   constraint: Constraint[];

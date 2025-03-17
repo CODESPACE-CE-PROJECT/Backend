@@ -60,6 +60,9 @@ export class CourseService {
         },
         include: {
           courseAnnounce: {
+            orderBy: {
+              createdAt: 'desc',
+            },
             include: {
               replyAnnounce: {
                 orderBy: {

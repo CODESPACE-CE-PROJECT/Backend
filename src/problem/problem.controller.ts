@@ -77,6 +77,71 @@ export class ProblemController {
     const title = {
       assignmentTitle: problem.assignment.title,
       courseTitle: problem.assignment.course.title,
+      courseId: problem.assignment.course.courseId,
+    };
+
+    const currentDate = new Date();
+
+    const isExpire = currentDate > new Date(problem.assignment.expireAt);
+
+    if (problem) {
+      Reflect.deleteProperty(problem, 'assignment');
+    }
+
+    return {
+      message: 'Successfully Get Problem',
+      data: {
+        ...problem,
+        ...title,
+        isExpire,
+        other: updateOtherProblems,
+      },
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Get Problem By Id (Teacher, Student)',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async getProblemByIdAndUsername(
+    @Request() req: IRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const problem = await this.problemService.getProblemById(
+      id,
+      req.user.username,
+    );
+
+    if (!problem) {
+      throw new HttpException('Problem Not Found', HttpStatus.NOT_FOUND);
+    }
+
+    const teacher = problem.assignment?.course.courseTeacher.find(
+      (teacher) => teacher.username === req.user.username,
+    );
+    const student = problem.assignment?.course.courseStudent.find(
+      (student) => student.username === req.user.username,
+    );
+
+    const otherProblems = problem.assignment?.problem;
+
+    const updateOtherProblems = otherProblems?.map((item) => {
+      return {
+        problemId: item.problemId,
+        title: item.title,
+        stateSubmission: !item.submission[0]?.stateSubmission
+          ? StateSubmission.NOTSEND
+          : item.submission[0]?.stateSubmission,
+      };
+    });
+
+    if (!teacher && !student) {
+      throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
+    }
+    const title = {
+      assignmentTitle: problem.assignment.title,
+      courseTitle: problem.assignment.course.title,
     };
 
     const currentDate = new Date();
