@@ -103,6 +103,7 @@ export class NotificationService {
           OR: orConditions,
         },
         include: {
+          course: true,
           user: {
             select: {
               firstName: true,
