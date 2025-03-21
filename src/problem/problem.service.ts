@@ -85,6 +85,7 @@ export class ProblemService {
         select: {
           testCases: true,
           constraint: true,
+          isRegex: true,
         },
       });
       return testcase;
