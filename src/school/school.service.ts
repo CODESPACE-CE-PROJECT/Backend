@@ -72,10 +72,10 @@ export class SchoolService {
       });
       const updateSchool = schools.map((school) => {
         const teacherCount = school.users.filter(
-          (user) => user.role === Role.TEACHER,
+          (user) => user.role === Role.TEACHER && user.isEnable,
         );
         const studentCount = school.users.filter(
-          (user) => user.role === Role.STUDENT,
+          (user) => user.role === Role.STUDENT && user.isEnable,
         );
 
         if (school) {
