@@ -91,8 +91,12 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(
       responseGoogle.profile._json.email,
     );
+
     if (!user) {
       return { error: 'User Not Found' };
+    }
+    if (!user.allowLogin || !user.isEnable) {
+      return { error: 'Permission denide' };
     }
     await this.userService.updateStatusByUsername(user?.username || '', true);
     const payload = {
