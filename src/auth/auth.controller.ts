@@ -40,7 +40,7 @@ export class AuthController {
   @Post('login')
   async login(@Request() req: IRequest, @Body() _loginDTO: LoginDTO) {
     const user = await this.userService.getUserByUsername(req.user.username);
-    if (!user?.allowLogin) {
+    if (!user?.allowLogin || !user.isEnable) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     const { accessToken, refreshToken } = await this.authService.login(
