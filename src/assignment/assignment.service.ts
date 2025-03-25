@@ -37,6 +37,30 @@ export class AssignmentService {
     }
   }
 
+  async CheckOutsideByIP(studentUsername: string, teacherUsername: string) {
+    try {
+      const student = await this.prisma.users.findUnique({
+        where: {
+          username: studentUsername,
+        },
+      });
+
+      const teacher = await this.prisma.users.findUnique({
+        where: {
+          username: teacherUsername,
+        },
+      });
+
+      if (student?.IpAddress === teacher?.IpAddress) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (error) {
+      throw new Error('Error Check Outside');
+    }
+  }
+
   async getAllAssignmentForCalendar(username: string) {
     try {
       const assignment = await this.prisma.assignment.findMany({
