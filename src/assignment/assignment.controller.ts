@@ -66,6 +66,10 @@ export class AssignmentController {
     if (!teacher && !student) {
       throw new HttpException('You Not In This Course', HttpStatus.BAD_REQUEST);
     }
+    const checkOutside = await this.assignmentService.CheckOutsideByIP(
+      req.user.username,
+      course.username,
+    );
 
     const assignments =
       await this.assignmentService.getAssigmentByCourseId(courseId);
@@ -128,6 +132,7 @@ export class AssignmentController {
 
       return {
         ...assignment,
+        checkOutside: checkOutside,
         problem: updatedProblems,
         totalScore: totalScore,
       };
@@ -240,11 +245,18 @@ export class AssignmentController {
           }),
         );
 
+        const totalScoreProblem = assignment.problem.reduce(
+          (total, p) => total + p.score,
+          0,
+        );
+
         return {
           assignmentId: assignment.assignmentId,
+          isLock: assignment.isLock,
           title: assignment.title,
           type: assignment.type,
           scores: scoresPerStudent,
+          totalScoreProblem,
         };
       }),
     );
