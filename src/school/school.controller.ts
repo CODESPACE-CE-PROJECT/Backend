@@ -216,7 +216,7 @@ export class SchoolController {
     );
 
     if (
-      !invalidSchoolName &&
+      invalidSchoolName &&
       updateSchoolDTO.schoolName &&
       invalidSchool.schoolName !== updateSchoolDTO.schoolName
     ) {
