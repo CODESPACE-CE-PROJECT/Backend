@@ -41,7 +41,7 @@ export class MinioClientService {
         await this.deleteFile(minioBucket, splitData[4]);
       }
       this.minio.client.putObject(minioBucket, fileName, fileBuffer);
-      const prefixrUrl = `${this.configService.get('NODE_ENV') === 'production' ? 'https' : 'http'}://${this.configService.get('MINIO_ENDPOINT')}${this.configService.get('NODE_ENV') === 'production' ? '' : `:${this.configService.get('MINIO_PORT')}`}`;
+      const prefixrUrl = `${this.configService.get('NODE_ENV') === 'production' ? 'https' : 'http'}://${this.configService.get('MINIO_URL')}${this.configService.get('NODE_ENV') === 'production' ? '' : `:${this.configService.get('MINIO_PORT')}`}`;
       return {
         fileUrl: `${prefixrUrl}/${minioBucket}/${fileName}`,
       };
