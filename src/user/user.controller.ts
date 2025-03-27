@@ -484,7 +484,7 @@ export class UserController {
       updateUserDTO.email,
     );
 
-    if (validUserEmail && updateUserDTO.email === validUser.email) {
+    if (validUserEmail && updateUserDTO.email !== validUser.email) {
       throw new HttpException(
         'Already Have This Email',
         HttpStatus.NOT_ACCEPTABLE,
