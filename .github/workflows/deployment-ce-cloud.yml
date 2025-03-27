@@ -20,6 +20,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT_CE_CLOUD }}
+          MINIO_URL: ${{ secrets.MINIO_URL_CE_CLOUD }}
           MINIO_PORT: ${{ secrets.MINIO_PORT }}
           MINIO_USE_SSL: ${{ secrets.MINIO_USE_SSL }}
           MINIO_ACCESSKEY: ${{ secrets.MINIO_ACCESSKEY_CE_CLOUD }}
@@ -40,6 +41,7 @@ jobs:
           echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
           echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
           echo "MINIO_ENDPOINT=$MINIO_ENDPOINT" >> .env
+          echo "MINIO_URL=$MINIO_URL" >> .env
           echo "MINIO_PORT=$MINIO_PORT" >> .env
           echo "MINIO_USE_SSL=$MINIO_USE_SSL" >> .env
           echo "MINIO_ACCESSKEY=$MINIO_ACCESSKEY" >> .env
