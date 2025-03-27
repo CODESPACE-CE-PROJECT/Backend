@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-  runs-on: self-hosted
+  runs-on: production
   if: github.event_name == 'push'
   steps:
     - name: Clone Repo 🤖
@@ -28,7 +28,7 @@ jobs:
         EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
         EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+        ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME_CE_CLOUD }}
         ADMIN_PASS: ${{ secrets.ADMIN_PASS_CE_CLOUD }}
         DOMAIN_URL: ${{ secrets.DOMAIN_URL_CE_CLOUD }}
         PROBLEM_LIMIT: ${{ secrets.PROBLEM_LIMIT }}
