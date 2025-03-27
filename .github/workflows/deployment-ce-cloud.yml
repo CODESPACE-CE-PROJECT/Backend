@@ -1,0 +1,73 @@
+name: Deployment CE Cloud
+
+on:
+  push:
+    branches: ['main']
+jobs:
+  deploy:
+    runs-on: ce-cloud
+    if: github.event_name == 'push'
+    steps:
+      - name: Clone Repo 🤖
+        uses: actions/checkout@v3
+
+      - name: Set Environment Variables 🔠
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_CE_CLOUD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET_CE_CLOUDE }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET_CE_CLOUD }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET_CE_CLOUD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_PORT: ${{ secrets.MINIO_PORT }}
+          MINIO_USE_SSL: ${{ secrets.MINIO_USE_SSL }}
+          MINIO_ACCESSKEY: ${{ secrets.MINIO_ACCESSKEY_CE_CLOUD }}
+          MINIO_SECRETKEY: ${{ secrets.MINIO_SECRETKEY_CE_CLOUD }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME_CE_CLOUD }}
+          ADMIN_PASS: ${{ secrets.ADMIN_PASS_CE_CLOUD }}
+          DOMAIN_URL: ${{ secrets.DOMAIN_URL_CE_CLOUD }}
+          PROBLEM_LIMIT: ${{ secrets.PROBLEM_LIMIT }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL_CE_CLOUD }}
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" >> .env
+          echo "JWT_SECRET=$JWT_SECRET" >> .env
+          echo "JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET" >> .env
+          echo "SESSION_SECRET=$SESSION_SECRET" >> .env
+          echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+          echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+          echo "MINIO_ENDPOINT=$MINIO_ENDPOINT" >> .env
+          echo "MINIO_PORT=$MINIO_PORT" >> .env
+          echo "MINIO_USE_SSL=$MINIO_USE_SSL" >> .env
+          echo "MINIO_ACCESSKEY=$MINIO_ACCESSKEY" >> .env
+          echo "MINIO_SECRETKEY=$MINIO_SECRETKEY" >> .env
+          echo "EMAIL_HOST=$EMAIL_HOST" >> .env 
+          echo "EMAIL_USERNAME=$EMAIL_USERNAME" >> .env
+          echo "EMAIL_PASSWORD=$EMAIL_PASSWORD" >> .env
+          echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env
+          echo "ADMIN_PASS=$ADMIN_PASS" >> .env
+          echo "DOMAIN_URL=$DOMAIN_URL" >> .env
+          echo "PROBLEM_LIMIT=$PROBLEM_LIMIT" >> .env
+          echo "FRONTEND_URL=$FRONTEND_URL" >> .env
+
+      - name: Clear Cache 🫧
+        run: |
+          docker stop backend || true
+          docker rm backend || true
+          docker rmi backend-backend:latest || true
+
+      - name: Run Image ✅
+        run: |
+          docker compose -f docker-compose.ce-cloud.yaml up -d
+
+      - name: Message ✉️
+        uses: fjogeleit/http-request-action@v1
+        with:
+          timeout: 60000
+          url: ${{ secrets.DISCORD_WEBHOOK }}
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://https://ce67-07.cloud.ce.kmitl.ac.th/api"}]}'

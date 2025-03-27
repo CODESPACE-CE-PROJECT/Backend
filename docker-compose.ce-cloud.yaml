@@ -1,0 +1,36 @@
+---
+networks:
+  backend:
+    external: true
+  frontend:
+    external: true
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: false
+      MINIO_ACCESSKEY: ${MINIO_ACCESSKEY}
+      MINIO_SECRETKEY: ${MINIO_SECRETKEY}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_USERNAME: ${EMAIL_USERNAME}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASS: ${ADMIN_PASS}
+      DOMAIN_URL: ${DOMAIN_URL}
+      PROBLEM_LIMIT: ${PROBLEM_LIMIT}
+      FRONTEND_URL: ${FRONTEND_URL}
+    networks:
+      - backend
+      - frontend
