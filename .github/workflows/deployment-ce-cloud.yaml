@@ -1,9 +1,8 @@
-name: Deployment
+name: Deployment CE Cloud
 
 on:
   push:
-    branches: ['ce-cloud']
-
+    branches: ['main']
 jobs:
   deploy:
   runs-on: production
