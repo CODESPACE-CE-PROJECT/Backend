@@ -70,4 +70,4 @@ jobs:
           url: ${{ secrets.DISCORD_WEBHOOK }}
           method: 'POST'
           customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"content": "CEPP Backend Build ✅","embeds": [{"title": "Backend url","description": "https://https://ce67-07.cloud.ce.kmitl.ac.th/api"}]}'
+          data: '{"content": "CEPP Backend CE Cloud ✅","embeds": [{"title": "Backend url","description": "https://ce67-07.cloud.ce.kmitl.ac.th/api"}]}'
