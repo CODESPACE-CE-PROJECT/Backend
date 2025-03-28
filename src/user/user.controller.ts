@@ -362,14 +362,14 @@ export class UserController {
       createUserDTO.schoolId,
     );
 
-    if (countTeacher >= (school?.permission?.maxCreateTeacher as number)) {
+    if (countTeacher >= (school?.permission?.maxCreateTeacher as number) && createUserDTO.users.find((item) => item.role === Role.TEACHER) && (createUserDTO.users.filter((item) => item.role === Role.TEACHER).length + (school?.permission?.maxCreateTeacher as number)) > (school?.permission?.maxCreateTeacher as number)) {
       throw new HttpException(
         `Over Limit Create Teacher ${school?.permission?.maxCreateTeacher}`,
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    if (countStudent >= (school?.permission?.maxCreateStudent as number)) {
+    if (countStudent >= (school?.permission?.maxCreateStudent as number) && createUserDTO.users.find((item) => item.role === Role.STUDENT) && (createUserDTO.users.filter((item) => item.role === Role.STUDENT).length + (school?.permission?.maxCreateStudent as number)) > (school?.permission?.maxCreateStudent as number)) {
       throw new HttpException(
         `Over Limit Create Student ${school?.permission?.maxCreateStudent}`,
         HttpStatus.BAD_REQUEST,
