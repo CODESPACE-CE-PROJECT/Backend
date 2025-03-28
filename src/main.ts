@@ -12,6 +12,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('CODESPACE')
     .setVersion('1.0')
+    .addServer(process.env.DOMAIN_URL as string)
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
